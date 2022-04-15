@@ -1,0 +1,11 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\wolfcrypt",
+    "\\wolfcrypt\\src",
+    "\\wolfssl",
+    "\\wolfssl\\wolfcrypt"
+  ],
+  "SelectedNode": "\\wolfssl\\version.h",
+  "PreviewInSolutionExplorer": false
+}

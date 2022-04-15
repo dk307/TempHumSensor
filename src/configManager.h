@@ -1,6 +1,4 @@
 #pragma once
-#include "config.h"
-
 #include "changeCallBack.h"
 
 struct configData
