@@ -15,12 +15,13 @@
 
 #include "WiFiManager.h"
 #include "configManager.h"
+#include "logging.h"
 
 operations operations::instance;
 
 void operations::factoryReset()
 {
-	Serial.println("Doing Factory Reset");
+	LOG_INFO("Doing Factory Reset");
 	system_restore();
 	config::erase();
 	ESP.reset();
@@ -32,12 +33,12 @@ void operations::begin()
 
 	if (mrd->detectMultiReset())
 	{
-		Serial.println(F("Detected Multi Reset Event!!!!"));
+		LOG_WARNING(F("Detected Multi Reset Event!!!!"));
 		factoryReset();
 	}
 	else
 	{
-		Serial.println(F("Not detected Multi Reset Event"));
+		LOG_INFO(F("Not detected Multi Reset Event"));
 	}
 }
 
@@ -60,7 +61,7 @@ void operations::loop()
 
 	if (rebootPending)
 	{
-		Serial.println(F("Restarting..."));
+		LOG_INFO(F("Restarting..."));
 		rebootPending = false;
 		ESP.reset();
 	}

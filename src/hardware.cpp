@@ -1,6 +1,9 @@
 #include "hardware.h"
 #include "configManager.h"
 #include "WiFiManager.h"
+#include "logging.h"
+
+#include <math.h>
 
 #include "Fonts/font.h"
 
@@ -10,7 +13,7 @@ void hardware::begin()
 {
     const auto ftn = [this]
     {
-        Serial.println(F("Display refresh needed"));
+        LOG_DEBUG(F("Display refresh needed"));
         refreshDisplay = true;
     };
     config::instance.addConfigSaveCallback(ftn);
@@ -22,7 +25,7 @@ void hardware::begin()
 
     if (!display.begin(SSD1306_SWITCHCAPVCC, ScreenAddress))
     {
-        Serial.println(F("SSD1306 allocation failed"));
+        LOG_ERROR(F("SSD1306 allocation failed"));
     }
 
     display.clearDisplay();
@@ -32,11 +35,12 @@ void hardware::begin()
     updateDisplay();
 }
 
-float hardware::round2Places(float val)
+float hardware::roundPlaces(float val, int places)
 {
     if (!isnan(val))
     {
-        return float(uint64_t(val * 100.0 + 0.5)) / 100.0;
+        const auto expVal = exp(places);
+        return float(uint64_t(expVal * val + 0.5)) / expVal;
     }
     return val;
 }
@@ -57,21 +61,19 @@ bool hardware::dhtUpdate()
     const auto now = millis();
     if (now - lastRead > config::instance.data.sensorsRefreshInterval)
     {
-        const auto temp = round2Places(dht.readTemperature());
-        const auto hum = round2Places(dht.readHumidity());
+        const auto temp = roundPlaces(dht.readTemperature(), 1);
+        const auto hum = roundPlaces(dht.readHumidity(), 0);
 
         if (temperature != temp)
         {
-            Serial.print(F("Temp: "));
-            Serial.println(temp, 4);
+            LOG_DEBUG(F("Temp: ") << temp); 
             temperature = temp;
             changed = true;
         }
 
         if (humidity != hum)
         {
-            Serial.print(F("Hum: "));
-            Serial.println(hum, 4);
+            LOG_DEBUG(F("Hum: ") << hum); 
             humidity = hum;
             changed = true;
         }
@@ -115,7 +117,7 @@ void hardware::updateDisplay()
             display.setTextSize(2);
             const auto displayTemperature = config::instance.data.showDisplayInF ? temperature * 9 / 5 + 32 : temperature;
             const auto displayTemperatureUnit = config::instance.data.showDisplayInF ? F(" F") : F(" C");
-            display2Lines(String(displayTemperature, 2) + displayTemperatureUnit, String(humidity, 2) + F(" %"));
+            display2Lines(String(displayTemperature, 1) + displayTemperatureUnit, String(humidity, 0) + F(" %"));
         }
         else
         {

@@ -8,6 +8,7 @@
 #include "configManager.h"
 #include "operations.h"
 #include "hardware.h"
+#include "logging.h"
 
 WebServer WebServer::instance;
 
@@ -15,16 +16,17 @@ static const char JsonMediaType[] PROGMEM = "application/json";
 
 void WebServer::begin()
 {
-	Serial.println(F("Http server starting"));
+	LOG_DEBUG(F("Starting"));
 	httpServer.begin();
 	serverRouting();
-	Serial.println(F("HTTP server started"));
+	LOG_INFO(F("Started"));
 }
 
 bool WebServer::manageSecurity(AsyncWebServerRequest *request)
 {
 	if (!isAuthenticated(request))
 	{
+		LOG_WARNING(F("Auth Failed"));
 		request->send(401, FPSTR(JsonMediaType), F("{\"msg\": \"Not-authenticated\"}"));
 		return false;
 	}
@@ -51,7 +53,7 @@ void WebServer::serverRouting()
 
 void WebServer::wifiGet(AsyncWebServerRequest *request)
 {
-	Serial.println(PSTR("/api/wifi/get"));
+	LOG_DEBUG(F("/api/wifi/get"));
 	if (!manageSecurity(request))
 	{
 		return;
@@ -72,7 +74,7 @@ void WebServer::wifiUpdate(AsyncWebServerRequest *request)
 	const auto SsidParameter = F("ssid");
 	const auto PasswordParameter = F("wifipassword");
 
-	Serial.println(F("Wifi Update"));
+	LOG_INFO(F("Wifi Update"));
 
 	if (!manageSecurity(request))
 	{
@@ -87,7 +89,7 @@ void WebServer::wifiUpdate(AsyncWebServerRequest *request)
 	}
 	else
 	{
-		Serial.println(F("Required parameters not provided"));
+		LOG_ERROR(F("Required parameters not provided"));
 		request->send(400);
 		return;
 	}
@@ -103,7 +105,7 @@ void addKeyValueObject(Array &array, const K &key, const T &value)
 
 void WebServer::informationGet(AsyncWebServerRequest *request)
 {
-	Serial.println(F("/api/information/get"));
+	LOG_DEBUG(F("/api/information/get"));
 	if (!manageSecurity(request))
 	{
 		return;
@@ -133,7 +135,7 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 
 void WebServer::configGet(AsyncWebServerRequest *request)
 {
-	Serial.println(F("/api/information/get"));
+	LOG_DEBUG(F("/api/information/get"));
 	if (!manageSecurity(request))
 	{
 		return;
@@ -153,7 +155,7 @@ void addToJsonDoc(JsonDocument &doc, T id, float value)
 
 void WebServer::sensorGet(AsyncWebServerRequest *request)
 {
-	Serial.println(F("/api/sensor/get"));
+	LOG_DEBUG(F("/api/sensor/get"));
 	if (!manageSecurity(request))
 	{
 		return;
@@ -171,24 +173,23 @@ void WebServer::sensorGet(AsyncWebServerRequest *request)
 // Check if header is present and correct
 bool WebServer::isAuthenticated(AsyncWebServerRequest *request)
 {
-	Serial.println(F("Checking if authenticated"));
+	LOG_TRACE(F("Checking if authenticated"));
 	if (request->hasHeader(F("Cookie")))
 	{
-		Serial.print(F("Found cookie: "));
-		String cookie = request->header(F("Cookie"));
-		Serial.println(cookie);
+		const String cookie = request->header(F("Cookie"));
+		LOG_TRACE(F("Found cookie: ") << cookie);
 
-		String token = sha1(config::instance.data.webUserName + ":" +
-							config::instance.data.webPassword + ":" +
-							request->client()->remoteIP().toString());
+		const String token = sha1(config::instance.data.webUserName + ":" +
+								  config::instance.data.webPassword + ":" +
+								  request->client()->remoteIP().toString());
 
 		if (cookie.indexOf(F("ESPSESSIONID=") + token) != -1)
 		{
-			Serial.println("Authentication Successful");
+			LOG_TRACE("Authentication Successful");
 			return true;
 		}
 	}
-	Serial.println("Authentication Failed");
+	LOG_TRACE("Authentication Failed");
 	return false;
 }
 
@@ -198,14 +199,12 @@ void WebServer::handleLogin(AsyncWebServerRequest *request)
 	const auto UserNameParameter = F("username");
 	const auto PasswordParameter = F("password");
 
-	Serial.println(F("Handle login"));
+	LOG_INFO(F("Handle login"));
 	String msg;
 	if (request->hasHeader(CookieHeader))
 	{
 		// Print cookies
-		Serial.print(F("Found cookie: "));
-		String cookie = request->header(CookieHeader);
-		Serial.println(cookie);
+		LOG_TRACE(F("Found cookie: ") << request->header(CookieHeader));
 	}
 
 	if (request->hasArg(UserNameParameter) && request->hasArg(PasswordParameter))
@@ -213,7 +212,7 @@ void WebServer::handleLogin(AsyncWebServerRequest *request)
 		if (request->arg(UserNameParameter).equalsIgnoreCase(config::instance.data.webUserName) &&
 			request->arg(PasswordParameter).equalsConstantTime(config::instance.data.webPassword))
 		{
-			Serial.println(F("User/Password correct"));
+			LOG_INFO(F("User/Password correct"));
 			auto response = request->beginResponse(301); // Sends 301 redirect
 
 			response->addHeader(F("Location"), F("/"));
@@ -221,17 +220,16 @@ void WebServer::handleLogin(AsyncWebServerRequest *request)
 
 			String token = sha1(config::instance.data.webUserName + F(":") + config::instance.data.webPassword +
 								F(":") + request->client()->remoteIP().toString());
-			Serial.print(F("Token: "));
-			Serial.println(token);
+			LOG_DEBUG(F("Token: ") << token);
 			response->addHeader(F("Set-Cookie"), F("ESPSESSIONID=") + token);
 
 			request->send(response);
-			Serial.println(F("Log in Successful"));
+			LOG_INFO(F("Log in Successful"));
 			return;
 		}
 
 		msg = F("Wrong username/password! Try again.");
-		Serial.println(F("Log in Failed"));
+		LOG_WARNING(F("Log in Failed"));
 		auto response = request->beginResponse(301); // Sends 301 redirect
 
 		response->addHeader(F("Location"), F("/login.html?msg=") + msg);
@@ -241,7 +239,7 @@ void WebServer::handleLogin(AsyncWebServerRequest *request)
 	}
 	else
 	{
-		Serial.println(F("Login Parameter not provided"));
+		LOG_ERROR(F("Login Parameter not provided"));
 		request->send(400);
 	}
 }
@@ -251,7 +249,7 @@ void WebServer::handleLogin(AsyncWebServerRequest *request)
  */
 void WebServer::handleLogout(AsyncWebServerRequest *request)
 {
-	Serial.println(F("Disconnection"));
+	LOG_INFO(F("Disconnection"));
 	AsyncWebServerResponse *response = request->beginResponse(301); // Sends 301 redirect
 	response->addHeader(F("Location"), F("/login.html?msg=User disconnected"));
 	response->addHeader(F("Cache-Control"), F("no-cache"));
@@ -265,7 +263,7 @@ void WebServer::webLoginUpdate(AsyncWebServerRequest *request)
 	const auto webUserName = F("webUserName");
 	const auto webPassword = F("webPassword");
 
-	Serial.println(F("web login Update"));
+	LOG_INFO(F("web login Update"));
 
 	if (!manageSecurity(request))
 	{
@@ -274,13 +272,13 @@ void WebServer::webLoginUpdate(AsyncWebServerRequest *request)
 
 	if (request->hasArg(webUserName) && request->hasArg("webPassword"))
 	{
-		Serial.println(F("Updating web username/password"));
+		LOG_INFO(F("Updating web username/password"));
 		config::instance.data.webUserName = request->arg(webUserName);
 		config::instance.data.webPassword = request->arg(webPassword);
 	}
 	else
 	{
-		Serial.println(F("Correct Parameters not provided"));
+		LOG_WARNING(F("Correct Parameters not provided"));
 		request->send(400);
 	}
 
@@ -294,7 +292,7 @@ void WebServer::otherSettingsUpdate(AsyncWebServerRequest *request)
 	const auto sensorsRefreshInterval = F("sensorsRefreshInterval");
 	const auto showDisplayInF = F("showDisplayInF");
 
-	Serial.println(F("config Update"));
+	LOG_INFO(F("config Update"));
 
 	if (!manageSecurity(request))
 	{
@@ -326,7 +324,7 @@ void WebServer::otherSettingsUpdate(AsyncWebServerRequest *request)
 
 void WebServer::restartDevice(AsyncWebServerRequest *request)
 {
-	Serial.println(F("restart"));
+	LOG_INFO(F("restart"));
 
 	if (!manageSecurity(request))
 	{
@@ -339,7 +337,7 @@ void WebServer::restartDevice(AsyncWebServerRequest *request)
 
 void WebServer::factoryReset(AsyncWebServerRequest *request)
 {
-	Serial.println(F("factoryReset"));
+	LOG_WARNING(F("factoryReset"));
 
 	if (!manageSecurity(request))
 	{
@@ -386,8 +384,7 @@ String WebServer::getContentType(const String &filename)
 void WebServer::handleFileRead(AsyncWebServerRequest *request)
 {
 	auto path = request->url();
-	Serial.print(F("handleFileRead: "));
-	Serial.println(path);
+	LOG_DEBUG(F("handleFileRead: ") << path);
 
 	const bool worksWithoutAuth = path.startsWith(F("/media/")) ||
 								  path.startsWith(F("/js/")) ||
@@ -396,7 +393,7 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 
 	if (!worksWithoutAuth && !isAuthenticated(request))
 	{
-		Serial.println(F("Redirecting to login page"));
+		LOG_DEBUG(F("Redirecting to login page"));
 		path = F("/login.html");
 	}
 	else
@@ -432,8 +429,7 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 		}
 		request->send(response);
 
-		Serial.print(F("Served file path:"));
-		Serial.println(path);
+		LOG_DEBUG(F("Served file path:") << path);
 	}
 	else
 	{
@@ -447,7 +443,7 @@ bool WebServer::isCaptivePortalRequest(AsyncWebServerRequest *request)
 {
 	if (!isIp(request->host()))
 	{
-		Serial.println(F("Request redirected to captive portal"));
+		LOG_INFO(F("Request redirected to captive portal"));
 		AsyncWebServerResponse *response = request->beginResponse(302, F("text/plain"));
 		response->addHeader(F("Location"), String(F("http://")) + toStringIp(request->client()->localIP()));
 		request->send(response);
@@ -478,7 +474,7 @@ void WebServer::handleNotFound(AsyncWebServerRequest *request)
 		message += " " + request->argName(i) + ": " + request->arg(i) + "\n";
 	}
 
-	Serial.println(message);
+	LOG_INFO(message);
 
 	AsyncWebServerResponse *response = request->beginResponse(404, F("text/plain"), message);
 	response->addHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
@@ -503,7 +499,7 @@ bool WebServer::isIp(const String &str)
 
 String WebServer::toStringIp(const IPAddress &ip)
 {
-	 return ip.toString();
+	return ip.toString();
 }
 
 void WebServer::redirectToRoot(AsyncWebServerRequest *request)
