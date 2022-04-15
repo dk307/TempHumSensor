@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
+  <link rel="stylesheet" href="css/mdb.min.css" />
+
+  <link rel="shortcut icon" href="media/favicon.png" type="image/x-icon">
+  <link rel="icon" href="media/favicon.png" type="image/x-icon">
+  <title>Login</title>
+</head>
+
+<body>
+
+  <section class="vh-100">
+    <div class="container py-5 h-100">
+
+      <div class="row d-flex justify-content-center align-items-center h-100">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+          <div class="card shadow-2-strong" style="border-radius: 1rem;">
+            <div class="card-body p- text-center">
+
+              <h3 class="mb-5"><img src="media/logo.png" alt="Logo"/></h3>
+              <form class="needs-validation" action="/login.handler" method="post">
+                <div class="form-outline mb-4">
+                  <input type="text" id="username" name="username" class="form-control form-control-lg" required />
+                  <label class="form-label" for="username">Username</label>
+                </div>
+
+                <div class="form-outline mb-4">
+                  <input type="password" id="password" name="password" class="form-control form-control-lg" required />
+                  <label class="form-label" for="password">Password</label>
+                </div>
+
+                <div class="form-outline mb-4">
+                  <button class="btn btn-primary btn-lg btn-block" type="submit">Login</button>
+                </div>
+              </form>
+
+              <div class="mb-4">
+                <div class="text-danger" id="message"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/mdb.min.js"></script>
+  <script>
+    function getURLParameter(sParam) {
+      var sPageURL = window.location.search.substring(1);
+      var sURLVariables = sPageURL.split('&');
+      for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == sParam) {
+          return sParameterName[1];
+        }
+      }
+    }
+    if (getURLParameter("msg")) {
+      document.getElementById("message").innerText = decodeURI(getURLParameter("msg"));
+    }
+  </script>
+</body>
+
+</html>
