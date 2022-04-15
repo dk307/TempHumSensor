@@ -7,16 +7,19 @@
 #include "WiFiManager.h"
 #include "operations.h"
 #include "hardware.h"
+#include "logging.h"
 
 void setup(void)
 {
 	Serial.begin(115200);
+ 
 	LittleFS.begin();
 	operations::instance.begin();
 	config::instance.begin();
 	WifiManager::instance.begin();
 	WebServer::instance.begin();
 	hardware::instance.begin();
+	LOG_INFO(F("Setup finished"));
 }
 
 void loop(void)

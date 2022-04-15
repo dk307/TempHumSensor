@@ -2,6 +2,7 @@
 
 #include "WiFiManager.h"
 #include "configManager.h"
+#include "logging.h"
 
 WifiManager WifiManager::instance;
 
@@ -17,7 +18,7 @@ void WifiManager::begin()
 
     rfcName = getRFC952Hostname(rfcName);
 
-    Serial.println(F("RFC name is ") + rfcName);
+    LOG_INFO(F("RFC name is ") << rfcName);
 
     WiFi.mode(WIFI_STA);
     WiFi.persistent(true);
@@ -34,8 +35,7 @@ void WifiManager::begin()
     if (waitForConnectResult(timeout) == WL_CONNECTED)
     {
         // connected
-        Serial.println(F("Connected to stored WiFi details"));
-        Serial.println(WiFi.localIP());
+        LOG_INFO(F("Connected to stored WiFi details with IP: ") << WiFi.localIP());
     }
     else
     {
@@ -76,7 +76,7 @@ void WifiManager::forget()
     disconnect();
     startCaptivePortal();
 
-    Serial.println(PSTR("Requested to forget WiFi. Started Captive portal."));
+    LOG_INFO(PSTR("Requested to forget WiFi. Started Captive portal."));
 }
 
 // function to request a connection to new WiFi credentials
@@ -109,19 +109,18 @@ void WifiManager::connectNewWifi(const String &newSSID, const String &newPass)
 
         if (WiFi.waitForConnectResult(timeout) != WL_CONNECTED)
         {
-            Serial.println(PSTR("New connection unsuccessful"));
+            LOG_ERROR(F("New connection unsuccessful"));
             if (!inCaptivePortal)
             {
                 WiFi.begin(oldSSID, oldPSK, 0, NULL, true);
                 if (WiFi.waitForConnectResult(timeout) != WL_CONNECTED)
                 {
-                    Serial.println(PSTR("Reconnection failed too"));
+                    LOG_ERROR(F("Reconnection failed too"));
                     startCaptivePortal();
                 }
                 else
                 {
-                    Serial.println(PSTR("Reconnection successful"));
-                    Serial.println(WiFi.localIP());
+                    LOG_INFO(F("Reconnection successful") << WiFi.localIP());
                 }
             }
         }
@@ -132,8 +131,7 @@ void WifiManager::connectNewWifi(const String &newSSID, const String &newPass)
                 stopCaptivePortal();
             }
 
-            Serial.println(PSTR("New connection successful"));
-            Serial.println(WiFi.localIP());
+            LOG_INFO(F("New connection successful") << WiFi.localIP());
         }
     }
 }
@@ -141,7 +139,7 @@ void WifiManager::connectNewWifi(const String &newSSID, const String &newPass)
 // function to start the captive portal
 void WifiManager::startCaptivePortal()
 {
-    Serial.println(F("Opened a captive portal"));
+    LOG_INFO(F("Opened a captive portal with AP ") << rfcName);
 
     WiFi.persistent(false);
     // disconnect sta, start ap
@@ -157,7 +155,6 @@ void WifiManager::startCaptivePortal()
     dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer->start(53, F("*"), WiFi.softAPIP());
 
-    Serial.println(F("192.168.4.1"));
     inCaptivePortal = true;
 }
 

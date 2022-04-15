@@ -47,5 +47,5 @@ private:
     bool dhtUpdate();
     void updateDisplay();
     void display2Lines(const String& first, const String& second);
-    static float round2Places(float val);
+    static float roundPlaces(float val, int places);
 };

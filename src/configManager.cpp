@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <Hash.h>
+#include "logging.h"
 
 #include "configManager.h"
 
@@ -27,7 +28,7 @@ bool config::begin()
     const auto json = readFromFile(ConfigFilePath);
     if (json.isEmpty())
     {
-        Serial.println(PSTR("No stored config found"));
+        LOG_INFO(F("No stored config found"));
         reset();
         return false;
     }
@@ -37,7 +38,7 @@ bool config::begin()
 
     if (checksum != readChecksum)
     {
-        Serial.println(PSTR("Config data checksum mismatch"));
+        LOG_ERROR(F("Config data checksum mismatch"));
         reset();
         return false;
     }
@@ -48,8 +49,7 @@ bool config::begin()
     // Test if parsing succeeds.
     if (error)
     {
-        Serial.print(F("deserializeJson for config failed: "));
-        Serial.println(error.f_str());
+        LOG_ERROR(F("deserializeJson for config failed: ") << error.f_str());
         reset();
         return false;
     }
@@ -109,7 +109,7 @@ bool config::writeToFile(const String &fileName, const String &contents)
 
 void config::save()
 {
-    Serial.println(F("Saving configuration"));
+    LOG_INFO(F("Saving configuration"));
     DynamicJsonDocument jsonBuffer(1024);
 
     jsonBuffer[FPSTR(HostNameId)] = data.hostName;
@@ -122,19 +122,19 @@ void config::save()
     String json;
     serializeJson(jsonBuffer, json);
 
-    Serial.println(json);
+    LOG_TRACE(F("Saving: ") << json);
 
     if (writeToFile(ConfigFilePath, json))
     {
         const auto checksum = sha1(json);
         if (!writeToFile(ConfigChecksumFilePath, checksum))
         {
-            Serial.println(F("Failed to write config checksum file"));
+            LOG_ERROR(F("Failed to write config checksum file"));
         }
     }
     else
     {
-        Serial.println(F("Failed to write config file"));
+        LOG_ERROR(F("Failed to write config file"));
     }
 
     callChangeListeners();
