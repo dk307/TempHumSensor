@@ -1,13 +1,19 @@
 #pragma once
 
-class HomeKit2
+#include <homekit/homekit.h>
+#include <homekit/characteristics.h>
+
+class homeKit2
 {
 public:
     void begin();
     void loop();
 
-    static HomeKit2 instance;
+    static homeKit2 instance;
 
 private:
+    homeKit2() {};
     static void storageChanged(char *szstorage, int bufsize);
 };
+
+extern homekit_server_config_t config;
