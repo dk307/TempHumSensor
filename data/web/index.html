@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
+
+    <link rel="stylesheet" href="css/mdb.min.css" />
+    <link rel="shortcut icon" href="media/favicon.png" type="image/x-icon">
+    <link rel="icon" href="media/favicon.png" type="image/x-icon">
+    <title>Main</title>
+</head>
+
+<body>
+    <!-- Navbar Start-->
+    <nav class="navbar fixed-top">
+        <!-- Container wrapper -->
+        <div class="container-fluid">
+            <!-- Navbar brand -->
+            <a class="navbar-brand mt-2 mt-sm-0" href="#">
+                <img src="media/logo.png" height="30" alt="Logo" loading="lazy" />
+                <span id="navHostName">Sensor</span>
+            </a>
+
+            <!-- Right elements -->
+            <div class="d-flex align-items-center">
+                <button type="button" class="btn btn-floating" data-mdb-toggle="modal" data-mdb-target="#settingsModal">
+                    <img src="media/settings.png" height="25" alt="Settings" loading="lazy" />
+                </button>
+                <button type="button" class="btn btn-floating" onclick="location.href='/logout.handler'">
+                    <img src="media/logout.png" height="25" alt="Logout" loading="lazy" />
+                </button>
+            </div>
+            <!-- Right elements -->
+        </div>
+        <!-- Container wrapper -->
+    </nav>
+    <!-- Navbar End -->
+
+    <main class="mt-5 pt-5">
+        <div class="container">
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">Temperature(C)</div>
+                        <div class="card-body">
+                            <p class="card-text"><span id="temperatureC">?</span>&nbsp;C</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">Temperature(F)</div>
+                        <div class="card-body">
+                            <p class="card-text"><span id="temperatureF">?</span>&nbsp;F</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">Humidity</div>
+                        <div class="card-body">
+                            <p class="card-text"><span id="humidity">?</span>&nbsp;%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Settings Modal Start -->
+        <div class="modal fade" id="settingsModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="settingsModalLabel"> <img src="media/settings.png" height="20"
+                                alt="Settings" loading="lazy" />&nbsp;Settings</h5>
+                        <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="d-grid gap-3">
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#wifiSettingsModal">Wifi Settings</button>
+                            </div>
+
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#websiteLoginModal">Website login</button>
+                            </div>
+
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#otherSettingsModal">Other
+                                    Settings</button>
+                            </div>
+
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#informationModal">Information</button>
+                            </div>
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#restartModal">Restart</button>
+                            </div>
+
+                            <div class="p-2">
+                                <button type="button" class="btn btn-danger btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#factoryResetModal">Factory Reset</button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Settings Modal End-->
+
+        <!-- Wifi Settings Modal Start-->
+        <form class="needs-validation" action="/wifiupdate.handler" method="post">
+            <div class="modal fade" id="wifiSettingsModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="wifiSettingsModalLabel"> <img src="media/wifi.png" height="20"
+                                    alt="Wifi Settings" loading="lazy" />&nbsp;Wifi Settings</h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="form-outline mb-4">
+                                <input type="text" id="ssid" name="ssid" class="form-control form-control" required />
+                                <label class="form-label" for="ssid">Wifi Network</label>
+                            </div>
+
+                            <div class="form-outline mb-4 input-group">
+                                <input type="password" id="wifipassword" name="wifipassword"
+                                    class="form-control form-control" required />
+                                <label class="form-label" for="wifipassword">Wifi Password</label>
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="checkbox" id="wifitooglepassword"
+                                        value="" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- Wifi Settings Modal End -->
+
+
+        <!-- Restart Modal Start-->
+        <form class="needs-validation" action="/restart.handler" method="post">
+            <div class="modal fade" id="restartModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="restartModalLabel">Confirm Factory Reset</h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <span class="justify-left">Do you want to restart ?</span>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- Restart Modal End -->
+
+        <!-- Factory Reset Modal Start-->
+        <form class="needs-validation" action="/factory.reset.handler" method="post">
+            <div class="modal fade" id="factoryResetModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="factoryResetModalLabel">Confirm Factory Reset</h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <span class="justify-left">Do you want to factory reset ?</span>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-danger">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- Factory Reset Modal End -->
+
+
+        <!-- Website Login Modal Start-->
+        <form class="needs-validation" action="/weblogin.update.handler" method="post">
+            <div class="modal fade" id="websiteLoginModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="websiteLoginModalLabel">Website Login</h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="form-outline mb-4">
+                                <input type="text" id="webUserName" name="webUserName" class="form-control form-control"
+                                    required />
+                                <label class="form-label" for="ssid">Username</label>
+                            </div>
+
+                            <div class="form-outline mb-4 input-group">
+                                <input type="password" id="webPassword" name="webPassword"
+                                    class="form-control form-control" required />
+                                <label class="form-label" for="webPassword">Password</label>
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="checkbox" id="webPasswordToggle"
+                                        value="" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- Website Login Modal End -->
+
+        <!-- Other Setings Modal Start-->
+        <form class="needs-validation" action="/othersettings.update.handler" method="post">
+            <div class="modal fade" id="otherSettingsModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="otherSettingsModalLabel">Other Settings</h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="form-outline mb-4">
+                                <input type="test" id="hostName" name="hostName" class="form-control form-control" />
+                                <label class="form-label" for="hostName">Hostname</label>
+                            </div>
+
+                            <div class="form-outline mb-4">
+                                <input type="number" id="sensorsRefreshInterval" name="sensorsRefreshInterval"
+                                    class="form-control form-control" required />
+                                <label class="form-label" for="ssid">Sensors Refresh Interval (seconds)</label>
+                            </div>
+
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="showDisplayInF"
+                                    name="showDisplayInF" value="0" />
+                                <label class="form-check-label" for="showDisplayInF">Show temperature in Fahrenheit on
+                                    display</label>
+                            </div>
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- Other Settings Modal End -->
+
+
+        <!-- Information Modal Start-->
+        <div class="modal fade" id="informationModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="informationModalLabel">Information</h5>
+                        <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <table class="table table-sm table-borderless" id="informationTable">
+                            <tbody>
+                                <tr>
+                                    <td>Failed to get information
+                                    <td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Information Modal End -->
+
+    </main>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/mdb.min.js"></script>
+    <script>
+        // Wifi Password toggle
+        $('#wifitooglepassword').change(function () {
+            let input = $('#wifipassword');
+            if (input.attr('type') == 'password') {
+                input.attr('type', 'text');
+            } else {
+                input.attr('type', 'password');
+            }
+        });
+
+        // Login Password toggle
+        $('#webPasswordToggle').change(function () {
+            let input = $('#webPassword');
+            if (input.attr('type') == 'password') {
+                input.attr('type', 'text');
+            } else {
+                input.attr('type', 'password');
+            }
+        });
+
+        document.getElementById('wifiSettingsModal').addEventListener('show.mdb.modal', (e) => {
+            $.ajax({
+                type: "GET",
+                url: "/api/wifi/get",
+                dataType: "json",
+                success: function (data) {
+                    $('#ssid').val(data["ssid"]);
+                },
+                error: function () {
+                    $('#ssid').val('');
+                    alert('Failed to update');
+                }
+            });
+        });
+
+        document.getElementById('websiteLoginModal').addEventListener('show.mdb.modal', (e) => {
+            $.ajax({
+                type: "GET",
+                url: "/api/config/get",
+                dataType: "json",
+                success: function (data) {
+                    $('#webUserName').val(data["webusername"]);
+                },
+                error: function () {
+                    $('#webUserName').val('');
+                    alert('Failed to update');
+                }
+            });
+        });
+
+
+        document.getElementById('otherSettingsModal').addEventListener('show.mdb.modal', (e) => {
+            $.ajax({
+                type: "GET",
+                url: "/api/config/get",
+                dataType: "json",
+                success: function (data) {
+                    $('#hostName').val(data["hostname"]);
+                    $('#sensorsRefreshInterval').val(data["sensorsrefreshinterval"] / 1000);
+                    $('#showDisplayInF').prop('checked', data["showdisplayinf"]);
+                    $('#showDisplayInF').val(data["showdisplayinf"] ? "1" : "0");
+                },
+                error: function () {
+                    alert('Failed to update');
+                }
+            });
+        });
+
+
+        document.getElementById('informationModal').addEventListener('show.mdb.modal', (e) => {
+            $.ajax({
+                type: "GET",
+                url: "/api/information/get",
+                dataType: "json",
+                success: function (data) {
+                    $("#informationTable tr").remove();
+                    var table = $('#informationTable');
+
+                    for (var i = 0; i < data.length; i++) {
+                        table.append("<tr><td>" + data[i].key + "</td><td>" + data[i].value + "</td></tr>");
+                    }
+
+                    $('#informationModal').modal('handleUpdate');
+                }
+            });
+        });
+
+        function updateVal() {
+            $.ajax({
+                type: "GET",
+                url: "/api/sensor/get",
+                async: true,
+                dataType: "json",
+                success: function (data) {
+                    if (data.hasOwnProperty('temperatureC')) {
+                        $('#temperatureC').html(data['temperatureC']);
+                        $('#temperatureF').html(data['temperatureC'] * 9 / 5 + 32);
+                    }
+                    $('#humidity').html(data['humidity']);
+                },
+                complete: function (data) {
+                    setTimeout(function () { updateVal(); }, 10000);
+                }
+            });
+        }
+
+        function updateHostname() {
+            $.ajax({
+                type: "GET",
+                url: "/api/config/get",
+                async: true,
+                dataType: "json",
+                success: function (data) {
+                    var hostName = data['hostname'];
+                    if (!(hostName === "")) {
+                        $('#navHostName').html(hostName);
+                    }
+                }
+            });
+        }
+        updateVal();
+        updateHostname();
+
+    </script>
+</body>
+
+</html>
