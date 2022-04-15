@@ -39,8 +39,9 @@ float hardware::roundPlaces(float val, int places)
 {
     if (!isnan(val))
     {
-        const auto expVal = exp(places);
-        return float(uint64_t(expVal * val + 0.5)) / expVal;
+        const auto expVal = pow(10, places);
+        const auto result = float(uint64_t(expVal * val + 0.5)) / expVal;
+        return result;
     }
     return val;
 }

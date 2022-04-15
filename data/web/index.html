@@ -413,8 +413,10 @@
                 dataType: "json",
                 success: function (data) {
                     if (data.hasOwnProperty('temperatureC')) {
-                        $('#temperatureC').html(data['temperatureC']);
-                        $('#temperatureF').html(data['temperatureC'] * 9 / 5 + 32);
+                        var tempC = data['temperatureC'];
+                        var tempF = tempC * 9 / 5 + 32;
+                        $('#temperatureC').html(tempC);
+                        $('#temperatureF').html(Math.round(tempF * 10) / 10);
                     }
                     $('#humidity').html(data['humidity']);
                 },
