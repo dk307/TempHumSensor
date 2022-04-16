@@ -31,6 +31,15 @@ void homeKit2::loop()
     arduino_homekit_loop();
 }
 
+bool homeKit2::isPaired()
+{
+    auto server = arduino_homekit_get_running_server();
+    if (server) {
+        return server->paired;
+    }
+    return false;
+}
+
 void homeKit2::storageChanged(char *szstorage, int bufsize)
 {
 }

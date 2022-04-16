@@ -9,6 +9,8 @@ public:
     void begin();
     void loop();
 
+    bool isPaired();
+
     static homeKit2 instance;
 
 private:
