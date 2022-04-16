@@ -67,18 +67,23 @@ bool hardware::dhtUpdate()
 
         if (temperature != temp)
         {
-            LOG_DEBUG(F("Temp: ") << temp); 
+            LOG_DEBUG(F("Temp: ") << temp);
             temperature = temp;
             changed = true;
         }
 
         if (humidity != hum)
         {
-            LOG_DEBUG(F("Hum: ") << hum); 
+            LOG_DEBUG(F("Hum: ") << hum);
             humidity = hum;
             changed = true;
         }
         lastRead = now;
+    }
+    
+    if (changed)
+    {
+        callChangeListeners();
     }
 
     return changed;

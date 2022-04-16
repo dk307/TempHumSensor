@@ -8,7 +8,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-class hardware
+#include "changeCallback.h"
+
+class hardware : changeCallBack
 {
 public:
     void begin();

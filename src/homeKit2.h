@@ -12,8 +12,13 @@ public:
     static homeKit2 instance;
 
 private:
-    homeKit2() {};
+    homeKit2(){};
     static void storageChanged(char *szstorage, int bufsize);
+    static void updatePassword(const char *password);
+    String accessoryName;
+    String password;
 };
 
-extern homekit_server_config_t config;
+extern "C" homekit_server_config_t config;
+extern "C" homekit_characteristic_t chaCurrentTemperature;
+extern "C" homekit_characteristic_t chaHumidity;
