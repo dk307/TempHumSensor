@@ -8,14 +8,11 @@ class homeKit2
 public:
     void begin();
     void loop();
-
     bool isPaired();
 
     static homeKit2 instance;
-
 private:
     homeKit2(){};
-    static void storageChanged(char *szstorage, int bufsize);
     static void updatePassword(const char *password);
     String accessoryName;
     String password;

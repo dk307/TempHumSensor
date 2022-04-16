@@ -34,6 +34,10 @@ void homekit_storage_pairing_iterator_init(pairing_iterator_t *it);
 int homekit_storage_next_pairing(pairing_iterator_t *it, pairing_t *pairing);
 void homekit_storage_pairing_iterator_done(pairing_iterator_t *iterator);
 
+extern bool read_storage(uint32 srcAddress, byte *desAddress,uint32 size);
+extern bool write_storage(uint32 desAddress, byte *srcAddress, uint32 size);
+extern bool reset_storage();
+
 #ifdef __cplusplus
 }
 #endif

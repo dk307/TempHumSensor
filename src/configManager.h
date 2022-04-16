@@ -1,12 +1,20 @@
 #pragma once
 #include "changeCallBack.h"
 
+class DataStorage
+{
+public:
+    void read(uint32_t srcAddress, uint32_t *desAddress,uint32_t size);
+    void write(uint32_t desAddress, uint32_t *srcAddress, uint32_t size);
+    void save();
+};
+
 struct configData
 {
     String hostName;
     String webUserName;
     String webPassword;
-    String homeKitPairData;
+    std::vector<byte> homeKitPairData;
     uint64_t sensorsRefreshInterval;
     bool showDisplayInF;
 
@@ -20,7 +28,7 @@ struct configData
         hostName = String();
         webUserName = F("admin");
         webPassword = F("admin");
-        homeKitPairData = String();
+        homeKitPairData.empty();
         sensorsRefreshInterval = 15 * 1000;
         showDisplayInF = false;
     }
