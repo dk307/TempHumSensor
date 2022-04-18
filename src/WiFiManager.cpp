@@ -76,7 +76,7 @@ void WifiManager::forget()
     disconnect();
     startCaptivePortal();
 
-    LOG_INFO(PSTR("Requested to forget WiFi. Started Captive portal."));
+    LOG_INFO(F("Requested to forget WiFi. Started Captive portal."));
 }
 
 // function to request a connection to new WiFi credentials

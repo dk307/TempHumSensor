@@ -44,6 +44,7 @@ void WebServer::serverRouting()
 	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
 	httpServer.on(PSTR("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
 	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
+	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
 
 	httpServer.on(PSTR("/api/sensor/get"), HTTP_GET, sensorGet);
 	httpServer.on(PSTR("/api/wifi/get"), HTTP_GET, wifiGet);
