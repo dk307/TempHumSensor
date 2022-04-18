@@ -11,7 +11,6 @@ public:
         configsavecallback.push_back(func);
     }
 
-protected:
     void callChangeListeners()
     {
         for (auto &&ftn : configsavecallback)

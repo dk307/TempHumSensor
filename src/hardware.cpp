@@ -39,8 +39,9 @@ float hardware::roundPlaces(float val, int places)
 {
     if (!isnan(val))
     {
-        const auto expVal = exp(places);
-        return float(uint64_t(expVal * val + 0.5)) / expVal;
+        const auto expVal = pow(10, places);
+        const auto result = float(uint64_t(expVal * val + 0.5)) / expVal;
+        return result;
     }
     return val;
 }
@@ -66,20 +67,22 @@ bool hardware::dhtUpdate()
 
         if (temperature != temp)
         {
-            LOG_DEBUG(F("Temp: ") << temp); 
+            LOG_DEBUG(F("Temp: ") << temp);
             temperature = temp;
             changed = true;
+            temperatureChangeCallback.callChangeListeners();
         }
 
         if (humidity != hum)
         {
-            LOG_DEBUG(F("Hum: ") << hum); 
+            LOG_DEBUG(F("Hum: ") << hum);
             humidity = hum;
             changed = true;
+            humidityChangeCallback.callChangeListeners();
         }
         lastRead = now;
     }
-
+    
     return changed;
 }
 

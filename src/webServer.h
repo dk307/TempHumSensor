@@ -19,12 +19,14 @@ private:
     static void webLoginUpdate(AsyncWebServerRequest *request);
     static void otherSettingsUpdate(AsyncWebServerRequest *request);
     static void factoryReset(AsyncWebServerRequest *request);
+    static void homekitReset(AsyncWebServerRequest *request);
     static void restartDevice(AsyncWebServerRequest *request);
 
     // ajax
     static void sensorGet(AsyncWebServerRequest *request);
     static void wifiGet(AsyncWebServerRequest *request);
     static void informationGet(AsyncWebServerRequest *request);
+    static void homekitGet(AsyncWebServerRequest *request);
     static void configGet(AsyncWebServerRequest *request);
 
     // helpers

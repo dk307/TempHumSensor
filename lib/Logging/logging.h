@@ -5,6 +5,7 @@
 #define LOG_FORMAT 3
 
 // Streaming operator for serial print use.
+
 template <class T>
 inline Print &operator<<(Print &obj, T &&arg)
 {
@@ -26,7 +27,7 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #define LOG_ERROR(content)                                                                                   \
     do                                                                                                       \
     {                                                                                                        \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(errorPrefix) << __func__ \
+        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(errorPrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << FPSTR(endl);                                            \
     } while (0)
 #else
@@ -40,7 +41,7 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #define LOG_WARNING(content)                                                                                \
     do                                                                                                      \
     {                                                                                                       \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(warnPrefix) << __func__ \
+        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(warnPrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << endl;                                                  \
     } while (0)
 #else
@@ -51,11 +52,11 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #endif
 
 #if LOG_FORMAT >= 2
-#define LOG_INFO(content)                                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(infoPrefix) << __FUNCTION__ \
-               << FPSTR(logSeperator3) << content << endl;                                                             \
+#define LOG_INFO(content)                                                                                   \
+    do                                                                                                      \
+    {                                                                                                       \
+        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(infoPrefix) << __FILE__ \
+               << FPSTR(logSeperator3) << content << endl;                                                  \
     } while (0)
 #else
 #define LOG_INFO(content) \
@@ -68,7 +69,7 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #define LOG_DEBUG(content)                                                                                   \
     do                                                                                                       \
     {                                                                                                        \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(debugPrefix) << __func__ \
+        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(debugPrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << endl;                                                   \
     } while (0)
 #else
@@ -82,7 +83,7 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #define LOG_TRACE(content)                                                                                   \
     do                                                                                                       \
     {                                                                                                        \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(tracePrefix) << __func__ \
+        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(tracePrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << endl;                                                   \
     } while (0)
 #else

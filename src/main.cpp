@@ -7,18 +7,22 @@
 #include "WiFiManager.h"
 #include "operations.h"
 #include "hardware.h"
+#include "homeKit2.h"
 #include "logging.h"
 
 void setup(void)
 {
 	Serial.begin(115200);
- 
+	LOG_INFO(F("Before setup free heap: ") << ESP.getFreeHeap() / 1024 << " KB");
+
 	LittleFS.begin();
 	operations::instance.begin();
 	config::instance.begin();
 	WifiManager::instance.begin();
 	WebServer::instance.begin();
 	hardware::instance.begin();
+	homeKit2::instance.begin();
+	LOG_INFO(F("After setup free heap: ") << ESP.getFreeHeap() / 1024 << " KB");
 	LOG_INFO(F("Setup finished"));
 }
 
@@ -28,4 +32,5 @@ void loop(void)
 	config::instance.loop();
 	hardware::instance.loop();
 	operations::instance.loop();
+	homeKit2::instance.loop();
 }

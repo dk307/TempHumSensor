@@ -8,7 +8,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-class hardware
+#include "changeCallback.h"
+
+class hardware 
 {
 public:
     void begin();
@@ -25,6 +27,9 @@ public:
     }
 
     static hardware instance;
+
+    changeCallBack temperatureChangeCallback;
+    changeCallBack humidityChangeCallback;
 
 private:
     // DHT

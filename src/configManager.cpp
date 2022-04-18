@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <Hash.h>
+#include <base64.h> // from esphap
 #include "logging.h"
 
 #include "configManager.h"
@@ -43,7 +44,7 @@ bool config::begin()
         return false;
     }
 
-    DynamicJsonDocument jsonBuffer(1024);
+    DynamicJsonDocument jsonBuffer(2048);
     const DeserializationError error = deserializeJson(jsonBuffer, json);
 
     // Test if parsing succeeds.
@@ -57,10 +58,17 @@ bool config::begin()
     data.hostName = jsonBuffer[FPSTR(HostNameId)].as<String>();
     data.webUserName = jsonBuffer[FPSTR(WebUserNameId)].as<String>();
     data.webPassword = jsonBuffer[FPSTR(WebPasswordId)].as<String>();
-    data.homeKitPairData = jsonBuffer[FPSTR(HomeKitPairDataId)].as<String>();
     data.sensorsRefreshInterval = jsonBuffer[FPSTR(SensorsRefreshIntervalId)].as<uint64_t>();
     data.showDisplayInF = jsonBuffer[FPSTR(ShowDisplayInFId)].as<bool>();
 
+    const auto encodedHomeKitData = jsonBuffer[FPSTR(HomeKitPairDataId)].as<String>();
+
+    const auto size = base64_decoded_size(reinterpret_cast<const unsigned char *>(encodedHomeKitData.c_str()),
+                                          encodedHomeKitData.length());
+    data.homeKitPairData.resize(size);
+
+    base64_decode_(reinterpret_cast<const unsigned char *>(encodedHomeKitData.c_str()),
+                   encodedHomeKitData.length(), data.homeKitPairData.data());
     return true;
 }
 
@@ -110,12 +118,17 @@ bool config::writeToFile(const String &fileName, const String &contents)
 void config::save()
 {
     LOG_INFO(F("Saving configuration"));
-    DynamicJsonDocument jsonBuffer(1024);
+    DynamicJsonDocument jsonBuffer(2048);
 
-    jsonBuffer[FPSTR(HostNameId)] = data.hostName;
-    jsonBuffer[FPSTR(WebUserNameId)] = data.webUserName;
-    jsonBuffer[FPSTR(WebPasswordId)] = data.webPassword;
-    jsonBuffer[FPSTR(HomeKitPairDataId)] = data.homeKitPairData;
+    jsonBuffer[FPSTR(HostNameId)] = data.hostName.c_str();
+    jsonBuffer[FPSTR(WebUserNameId)] = data.webUserName.c_str();
+    jsonBuffer[FPSTR(WebPasswordId)] = data.webPassword.c_str();
+
+    const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
+    const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
+    base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
+
+    jsonBuffer[FPSTR(HomeKitPairDataId)] = encodedData.get();
     jsonBuffer[FPSTR(SensorsRefreshIntervalId)] = data.sensorsRefreshInterval;
     jsonBuffer[FPSTR(ShowDisplayInFId)] = data.showDisplayInF;
 
@@ -137,6 +150,7 @@ void config::save()
         LOG_ERROR(F("Failed to write config file"));
     }
 
+    LOG_TRACE(F("Saving done"));
     callChangeListeners();
 }
 
