@@ -10,7 +10,6 @@
 #include "Arduino.h"
 #include "stdint.h"
 #include "user_interface.h"
-#include "homekit_debug.h"
 
 #define REG_WDT_BASE 0x60000900
 

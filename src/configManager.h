@@ -28,7 +28,7 @@ struct configData
         hostName = String();
         webUserName = F("admin");
         webPassword = F("admin");
-        homeKitPairData.empty();
+        homeKitPairData.resize(0);
         sensorsRefreshInterval = 15 * 1000;
         showDisplayInF = false;
     }

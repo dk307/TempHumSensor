@@ -70,6 +70,7 @@ bool hardware::dhtUpdate()
             LOG_DEBUG(F("Temp: ") << temp);
             temperature = temp;
             changed = true;
+            temperatureChangeCallback.callChangeListeners();
         }
 
         if (humidity != hum)
@@ -77,15 +78,11 @@ bool hardware::dhtUpdate()
             LOG_DEBUG(F("Hum: ") << hum);
             humidity = hum;
             changed = true;
+            humidityChangeCallback.callChangeListeners();
         }
         lastRead = now;
     }
     
-    if (changed)
-    {
-        callChangeListeners();
-    }
-
     return changed;
 }
 

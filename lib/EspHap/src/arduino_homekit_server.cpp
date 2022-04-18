@@ -59,7 +59,7 @@
 #endif
 
 #define CLIENT_DEBUG(client, message, ...) DEBUG("[Client %d] " message, client->socket, ##__VA_ARGS__)
-#define CLIENT_INFO(client, message, ...) INFO("[Client %d] " message, client->socket, ##__VA_ARGS__)
+#define CLIENT_INFO(client, message, ...) INFO("[Client %d]" message, client->socket, ##__VA_ARGS__)
 #define CLIENT_ERROR(client, message, ...) ERROR("[Client %d] " message, client->socket, ##__VA_ARGS__)
 
 client_context_t *current_client_context = NULL;
@@ -80,7 +80,7 @@ homekit_server_t* server_new() {
 	server->wifi_server = new WiFiServer(HOMEKIT_SERVER_PORT);
 	server->wifi_server->begin();
 	server->wifi_server->setNoDelay(true);
-	DEBUG("WiFiServer begin at port: %d", HOMEKIT_SERVER_PORT);
+	INFO("WiFiServer begin at port: %d", HOMEKIT_SERVER_PORT);
 	//FD_ZERO(&server->fds);
 	//server->max_fd = 0;
 	server->nfds = 0;
@@ -3181,7 +3181,7 @@ void homekit_mdns_init(homekit_server_t *server) {
 	// The callback is called, whenever service TXT items are needed for the given service.
 	MDNS.setDynamicServiceTxtCallback(mdns_service,
 			[](const MDNSResponder::hMDNSService p_hService) {
-				DEBUG("MDNS call DynamicServiceTxtCallback");
+				// DEBUG("MDNS call DynamicServiceTxtCallback");
 				if (running_server) {
 					MDNS.addDynamicServiceTxt(p_hService, "sf",
 							(running_server->paired) ? "0" : "1");

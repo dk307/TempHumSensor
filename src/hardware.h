@@ -10,7 +10,7 @@
 
 #include "changeCallback.h"
 
-class hardware : changeCallBack
+class hardware 
 {
 public:
     void begin();
@@ -27,6 +27,9 @@ public:
     }
 
     static hardware instance;
+
+    changeCallBack temperatureChangeCallback;
+    changeCallBack humidityChangeCallback;
 
 private:
     // DHT

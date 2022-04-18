@@ -43,7 +43,7 @@ typedef struct {
 
 
 int homekit_storage_init() {
-
+    INFO("Init Storage");
     char magic[sizeof(magic1)];
     memset(magic, 0, sizeof(magic));
 
@@ -52,7 +52,7 @@ int homekit_storage_init() {
     }
 
     if (strncmp(magic, magic1, sizeof(magic1))) {
-        INFO("Formatting HomeKit storage at 0x%x", STORAGE_BASE_ADDR);
+        INFO("Formatting HomeKit storage");
         if (!reset_storage()) {
             ERROR("Failed to erase HomeKit storage");
             return -1;

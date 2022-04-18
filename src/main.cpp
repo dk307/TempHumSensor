@@ -13,7 +13,8 @@
 void setup(void)
 {
 	Serial.begin(115200);
- 
+	LOG_INFO(F("Before setup free heap: ") << ESP.getFreeHeap() / 1024 << " KB");
+
 	LittleFS.begin();
 	operations::instance.begin();
 	config::instance.begin();
@@ -21,6 +22,7 @@ void setup(void)
 	WebServer::instance.begin();
 	hardware::instance.begin();
 	homeKit2::instance.begin();
+	LOG_INFO(F("After setup free heap: ") << ESP.getFreeHeap() / 1024 << " KB");
 	LOG_INFO(F("Setup finished"));
 }
 

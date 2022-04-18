@@ -34,7 +34,7 @@ void operations::begin()
 	if (mrd->detectMultiReset())
 	{
 		LOG_WARNING(F("Detected Multi Reset Event!!!!"));
-		factoryReset();
+		// factoryReset();
 	}
 	else
 	{

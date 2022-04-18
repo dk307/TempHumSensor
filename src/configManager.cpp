@@ -44,7 +44,7 @@ bool config::begin()
         return false;
     }
 
-    DynamicJsonDocument jsonBuffer(1024);
+    DynamicJsonDocument jsonBuffer(2048);
     const DeserializationError error = deserializeJson(jsonBuffer, json);
 
     // Test if parsing succeeds.
@@ -118,14 +118,14 @@ bool config::writeToFile(const String &fileName, const String &contents)
 void config::save()
 {
     LOG_INFO(F("Saving configuration"));
-    DynamicJsonDocument jsonBuffer(1024);
+    DynamicJsonDocument jsonBuffer(2048);
 
     jsonBuffer[FPSTR(HostNameId)] = data.hostName.c_str();
     jsonBuffer[FPSTR(WebUserNameId)] = data.webUserName.c_str();
     jsonBuffer[FPSTR(WebPasswordId)] = data.webPassword.c_str();
 
     const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
-    const auto encodedData = std::make_unique<byte[]>(requiredSize);
+    const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
     base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
 
     jsonBuffer[FPSTR(HomeKitPairDataId)] = encodedData.get();
@@ -150,6 +150,7 @@ void config::save()
         LOG_ERROR(F("Failed to write config file"));
     }
 
+    LOG_TRACE(F("Saving done"));
     callChangeListeners();
 }
 

@@ -273,7 +273,7 @@ void json_integer(json_stream *json, int x) {
 
 void json_float(json_stream *json, float x) {
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), "%1.15g", x);
+    snprintf(buffer, sizeof(buffer), "%1.6", x);
 
     _json_number(json, buffer);
 }

@@ -3,7 +3,6 @@
 
 #include "homekit_debug.h"
 
-
 char *binary_to_string(const byte *data, size_t size) {
     int i;
 

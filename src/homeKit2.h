@@ -11,13 +11,25 @@ public:
     bool isPaired();
 
     static homeKit2 instance;
+
+    const String &getPassword()
+    {
+        return password;
+    }
+
 private:
     homeKit2(){};
+    static void updateChaValues();
+    static void updateChaValue(homekit_characteristic_t &cha, float value);
+    static void updateChaValue(homekit_characteristic_t &cha, const char* value);
     static void updatePassword(const char *password);
+
+    void notifyTemperatureChange();
+    void notifyHumidityChange();
+
     String accessoryName;
     String password;
+    String serialNumber;
+    bool notifyTemp;
 };
 
-extern "C" homekit_server_config_t config;
-extern "C" homekit_characteristic_t chaCurrentTemperature;
-extern "C" homekit_characteristic_t chaHumidity;

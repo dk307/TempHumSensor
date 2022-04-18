@@ -6,23 +6,40 @@
 #include "logging.h"
 
 #include <math.h>
-
+#include <homekit/homekit.h>
+#include <homekit/characteristics.h>
 #include <arduino_homekit_server.h>
 
 homeKit2 homeKit2::instance;
 
+extern "C" homekit_server_config_t config;
+extern "C" homekit_characteristic_t chaCurrentTemperature;
+extern "C" homekit_characteristic_t chaHumidity;
+
 void homeKit2::begin()
 {
+    config.password_callback = &homeKit2::updatePassword;   
+    serialNumber = String(ESP.getChipId(), HEX);
+    serialNumber.toUpperCase();
+
     updateChaValues();
+    updateChaValue(*config.accessories[0]->services[0]->characteristics[2], serialNumber.c_str());
 
     accessoryName = config::instance.data.hostName;
-
     config.password_callback = &homeKit2::updatePassword;
+
+    config::instance.addConfigSaveCallback([this]
+                                           {                                      
+        if ((accessoryName != config::instance.data.hostName) && (!config::instance.data.hostName.isEmpty()))
+        {
+            accessoryName = config::instance.data.hostName;
+            updateChaValue(*config.accessories[0]->services[0]->characteristics[0], accessoryName.c_str());
+        } });
 
     if (!accessoryName.isEmpty())
     {
-        config.accessories[0]->services[0]->characteristics[0]->value.string_value =
-            const_cast<char *>(accessoryName.c_str());
+       
+        updateChaValue(*config.accessories[0]->services[0]->characteristics[0], accessoryName.c_str());
     }
 
     arduino_homekit_setup(&config);
@@ -70,10 +87,25 @@ void homeKit2::updatePassword(const char *password)
 
 void homeKit2::updateChaValue(homekit_characteristic_t &cha, float value)
 {
+    LOG_INFO(F("Name:") << value);
     if (!isnan(value))
     {
         cha.value.is_null = false;
         cha.value.float_value = value;
+    }
+    else
+    {
+        cha.value.is_null = true;
+    }
+}
+
+void homeKit2::updateChaValue(homekit_characteristic_t &cha, const char *value)
+{
+     LOG_INFO(F("Name:") << value);
+    if (value)
+    {
+        cha.value.is_null = false;
+        cha.value.string_value = const_cast<char *>(value);
     }
     else
     {

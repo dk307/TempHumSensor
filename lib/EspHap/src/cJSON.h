@@ -139,7 +139,7 @@ typedef int cJSON_bool;
 
 /* Precision of double variables comparison */
 #ifndef CJSON_DOUBLE_PRECISION
-#define CJSON_DOUBLE_PRECISION .0000000000000001
+#define CJSON_DOUBLE_PRECISION .0000001
 #endif
 
 /* returns the version of cJSON as a string */

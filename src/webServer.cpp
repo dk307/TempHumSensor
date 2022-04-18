@@ -8,6 +8,7 @@
 #include "configManager.h"
 #include "operations.h"
 #include "hardware.h"
+#include "homeKit2.h"
 #include "logging.h"
 
 WebServer WebServer::instance;
@@ -16,10 +17,10 @@ static const char JsonMediaType[] PROGMEM = "application/json";
 
 void WebServer::begin()
 {
-	LOG_DEBUG(F("Starting"));
+	LOG_DEBUG(F("WebServer Starting"));
 	httpServer.begin();
 	serverRouting();
-	LOG_INFO(F("Started"));
+	LOG_INFO(F("WebServer Started"));
 }
 
 bool WebServer::manageSecurity(AsyncWebServerRequest *request)
@@ -39,6 +40,7 @@ void WebServer::serverRouting()
 	httpServer.on(PSTR("/logout.handler"), HTTP_GET, handleLogout);
 	httpServer.on(PSTR("/wifiupdate.handler"), HTTP_POST, wifiUpdate);
 	httpServer.on(PSTR("/factory.reset.handler"), HTTP_POST, factoryReset);
+	httpServer.on(PSTR("/homekit.reset.handler"), HTTP_POST, homekitReset);
 	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
 	httpServer.on(PSTR("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
 	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
@@ -46,6 +48,7 @@ void WebServer::serverRouting()
 	httpServer.on(PSTR("/api/sensor/get"), HTTP_GET, sensorGet);
 	httpServer.on(PSTR("/api/wifi/get"), HTTP_GET, wifiGet);
 	httpServer.on(PSTR("/api/information/get"), HTTP_GET, informationGet);
+	httpServer.on(PSTR("/api/homekit/get"), HTTP_GET, homekitGet);
 	httpServer.on(PSTR("/api/config/get"), HTTP_GET, configGet);
 
 	httpServer.onNotFound(handleFileRead);
@@ -127,6 +130,29 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 
 	addKeyValueObject(arr, F("Filesystem Total Size (KB)"), fsInfo.totalBytes / 1024);
 	addKeyValueObject(arr, F("Filesystem Free Size (KB)"), (fsInfo.totalBytes - fsInfo.usedBytes) / 1024);
+
+	String JSON;
+	serializeJson(arr, JSON);
+	request->send(200, FPSTR(JsonMediaType), JSON);
+}
+
+void WebServer::homekitGet(AsyncWebServerRequest *request)
+{
+	LOG_DEBUG(F("/api/homekit/get"));
+	if (!manageSecurity(request))
+	{
+		return;
+	}
+
+	DynamicJsonDocument arr(1024);
+
+	const bool paired = homeKit2::instance.isPaired();
+
+	addKeyValueObject(arr, F("Paired"), homeKit2::instance.isPaired() ? F("Yes") : F("No"));
+	if (!paired)
+	{
+		addKeyValueObject(arr, F("Password"), homeKit2::instance.getPassword());
+	}
 
 	String JSON;
 	serializeJson(arr, JSON);
@@ -348,6 +374,22 @@ void WebServer::factoryReset(AsyncWebServerRequest *request)
 	operations::instance.factoryReset();
 }
 
+void WebServer::homekitReset(AsyncWebServerRequest *request)
+{
+	LOG_WARNING(F("homekitReset"));
+
+	if (!manageSecurity(request))
+	{
+		return;
+	}
+
+
+	config::instance.data.homeKitPairData.resize(0);
+	config::instance.save();
+	redirectToRoot(request);
+	operations::instance.reboot();
+}
+
 String WebServer::getContentType(const String &filename)
 {
 	if (filename.endsWith(F(".htm")))
@@ -417,7 +459,6 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 		}
 
 		auto response = request->beginResponse(LittleFS, path, contentType);
-
 		if (worksWithoutAuth)
 		{
 			response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));

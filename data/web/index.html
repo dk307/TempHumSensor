@@ -21,17 +21,17 @@
         <div class="container-fluid">
             <!-- Navbar brand -->
             <a class="navbar-brand mt-2 mt-sm-0" href="#">
-                <img src="media/logo.png" height="30" alt="Logo" loading="lazy" />
+                <img src="media/logo.png" height="35" alt="Logo" loading="lazy" />
                 <span id="navHostName">Sensor</span>
             </a>
 
             <!-- Right elements -->
             <div class="d-flex align-items-center">
                 <button type="button" class="btn btn-floating" data-mdb-toggle="modal" data-mdb-target="#settingsModal">
-                    <img src="media/settings.png" height="25" alt="Settings" loading="lazy" />
+                    <img src="media/settings.png" height="35" alt="Settings" loading="lazy" />
                 </button>
-                <button type="button" class="btn btn-floating" onclick="location.href='/logout.handler'">
-                    <img src="media/logout.png" height="25" alt="Logout" loading="lazy" />
+                <button type="button" class="btn btn-floating" data-mdb-toggle="modal" data-mdb-target="#logoutModal">
+                    <img src="media/logout.png" height="35" alt="Logout" loading="lazy" />
                 </button>
             </div>
             <!-- Right elements -->
@@ -97,6 +97,11 @@
                                 <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
                                     data-mdb-dismiss="modal" data-mdb-target="#otherSettingsModal">Other
                                     Settings</button>
+                            </div>
+
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#homekitModal">HomeKit</button>
                             </div>
 
                             <div class="p-2">
@@ -167,12 +172,35 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="restartModalLabel">Confirm Factory Reset</h5>
+                            <h5 class="modal-title" id="restartModalLabel">Confirm Restart</h5>
                             <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                         </div>
 
                         <div class="modal-body">
                             <span class="justify-left">Do you want to restart ?</span>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- Restart Modal End -->
+
+        <!-- Logout Modal Start-->
+        <form class="needs-validation" action="/logout.handler" method="post">
+            <div class="modal fade" id="logoutModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <span class="justify-left">Do you want to logout ?</span>
                         </div>
                         <div class="modal-footer">
                             <button type="submit" class="btn btn-primary">Yes</button>
@@ -286,6 +314,60 @@
         <!-- Other Settings Modal End -->
 
 
+        <!-- HomeKit Modal Start-->
+        <div class="modal fade" id="homekitModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="homekitModalLabel">Homekit</h5>
+                        <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <table class="table table-sm table-borderless" id="homekitTable">
+                            <tbody>
+                                <tr>
+                                    <td>Failed to get HomeKit information
+                                    <td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-mdb-toggle="modal" data-mdb-dismiss="modal"
+                            data-mdb-target="#homekitResetModal">Forget HomeKit Pairing</button>
+                        <button type="submit" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Homekit Modal End -->
+
+        <!-- HomeKit Reset Modal Start-->
+        <form class="needs-validation" action="/homekit.reset.handler" method="post">
+            <div class="modal fade" id="homekitResetModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="homekitResetModalLabel">Confirm HomeKit Factory Pairing Forget
+                            </h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <span class="justify-left">Do you want to confirm HomeKit Factory Pairing ?</span>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-danger">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">No</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- HomeKit Reset Modal End -->
+
+
         <!-- Information Modal Start-->
         <div class="modal fade" id="informationModal" tabindex="-1">
             <div class="modal-dialog">
@@ -318,6 +400,83 @@
     <script src="js/jquery.min.js"></script>
     <script src="js/mdb.min.js"></script>
     <script>
+
+        function updateHostName() {
+            $.ajax({
+                type: "GET",
+                url: "/api/config/get",
+                async: true,
+                dataType: "json",
+                success: function (data) {
+                    var hostName = data['hostname'];
+                    if (!(hostName === "")) {
+                        $('#navHostName').html(hostName);
+                    }
+                }
+            });
+        }
+
+        function updateSensorValues() {
+            var anyModalShown = $('.modal').is(':visible');
+            if (!anyModalShown) {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/sensor/get",
+                    async: true,
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.hasOwnProperty('temperatureC')) {
+                            var tempC = data['temperatureC'];
+                            var tempF = tempC * 9 / 5 + 32;
+                            $('#temperatureC').html(tempC);
+                            $('#temperatureF').html(Math.round(tempF * 10) / 10);
+                        }
+                        $('#humidity').html(data['humidity']);
+                    }
+                });
+            }
+        }
+
+        function updateInformation() {
+            $.ajax({
+                type: "GET",
+                url: "/api/information/get",
+                dataType: "json",
+                success: function (data) {
+                    $("#informationTable tr").remove();
+                    var table = $('#informationTable');
+
+                    for (var i = 0; i < data.length; i++) {
+                        table.append("<tr><td>" + data[i].key + "</td><td>" + data[i].value + "</td></tr>");
+                    }
+
+                    $('#informationModal').modal('handleUpdate');
+                }
+            });
+        }
+
+        function updateHomeKit() {
+            $.ajax({
+                type: "GET",
+                url: "/api/homekit/get",
+                dataType: "json",
+                success: function (data) {
+                    $("#homekitTable tr").remove();
+                    var table = $('#homekitTable');
+
+                    for (var i = 0; i < data.length; i++) {
+                        table.append("<tr><td>" + data[i].key + "</td><td>" + data[i].value + "</td></tr>");
+                    }
+
+                    $('#homekitModal').modal('handleUpdate');
+                }
+            });
+        }
+
+        var sensorUpdateIntervalID = setInterval(updateSensorValues, 10000); // root sensor 
+        var informationUpdateRefreshInterval;
+        var homekitUpdateRefreshInterval;
+
         // Wifi Password toggle
         $('#wifitooglepassword').change(function () {
             let input = $('#wifipassword');
@@ -348,7 +507,7 @@
                 },
                 error: function () {
                     $('#ssid').val('');
-                    alert('Failed to update');
+                    console.warn('Failed to update');
                 }
             });
         });
@@ -363,11 +522,10 @@
                 },
                 error: function () {
                     $('#webUserName').val('');
-                    alert('Failed to update');
+                    console.warn('Failed to update');
                 }
             });
         });
-
 
         document.getElementById('otherSettingsModal').addEventListener('show.mdb.modal', (e) => {
             $.ajax({
@@ -381,68 +539,31 @@
                     $('#showDisplayInF').val(data["showdisplayinf"] ? "1" : "0");
                 },
                 error: function () {
-                    alert('Failed to update');
+                    console.warn('Failed to update');
                 }
             });
         });
-
 
         document.getElementById('informationModal').addEventListener('show.mdb.modal', (e) => {
-            $.ajax({
-                type: "GET",
-                url: "/api/information/get",
-                dataType: "json",
-                success: function (data) {
-                    $("#informationTable tr").remove();
-                    var table = $('#informationTable');
-
-                    for (var i = 0; i < data.length; i++) {
-                        table.append("<tr><td>" + data[i].key + "</td><td>" + data[i].value + "</td></tr>");
-                    }
-
-                    $('#informationModal').modal('handleUpdate');
-                }
-            });
+            updateInformation();
+            informationUpdateRefreshInterval = setInterval(updateInformation, 10000);
         });
 
-        function updateVal() {
-            $.ajax({
-                type: "GET",
-                url: "/api/sensor/get",
-                async: true,
-                dataType: "json",
-                success: function (data) {
-                    if (data.hasOwnProperty('temperatureC')) {
-                        var tempC = data['temperatureC'];
-                        var tempF = tempC * 9 / 5 + 32;
-                        $('#temperatureC').html(tempC);
-                        $('#temperatureF').html(Math.round(tempF * 10) / 10);
-                    }
-                    $('#humidity').html(data['humidity']);
-                },
-                complete: function (data) {
-                    setTimeout(function () { updateVal(); }, 10000);
-                }
-            });
-        }
+        document.getElementById('informationModal').addEventListener('hide.mdb.modal', (e) => {
+            clearInterval(informationUpdateRefreshInterval);
+        });
 
-        function updateHostname() {
-            $.ajax({
-                type: "GET",
-                url: "/api/config/get",
-                async: true,
-                dataType: "json",
-                success: function (data) {
-                    var hostName = data['hostname'];
-                    if (!(hostName === "")) {
-                        $('#navHostName').html(hostName);
-                    }
-                }
-            });
-        }
-        updateVal();
-        updateHostname();
+        document.getElementById('homekitModal').addEventListener('show.mdb.modal', (e) => {
+            updateHomeKit();
+            homekitUpdateRefreshInterval = setInterval(updateHomeKit, 10000);
+        });
 
+        document.getElementById('homekitModal').addEventListener('hide.mdb.modal', (e) => {
+            clearInterval(homekitUpdateRefreshInterval);
+        });
+
+        updateSensorValues();
+        updateHostName();
     </script>
 </body>
 
