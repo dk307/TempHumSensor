@@ -115,8 +115,9 @@
 
                             <div class="p-2">
                                 <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
-                                    data-mdb-dismiss="modal" data-mdb-target="#firmwareUpdateModal">Firmware update</button>
-                            </div>                            
+                                    data-mdb-dismiss="modal" data-mdb-target="#firmwareUpdateModal">Firmware
+                                    update</button>
+                            </div>
 
                             <div class="p-2">
                                 <button type="button" class="btn btn-danger btn-block" data-mdb-toggle="modal"
@@ -290,7 +291,7 @@
 
                         <div class="modal-body">
                             <div class="form-outline mb-4">
-                                <input type="test" id="hostName" name="hostName" class="form-control form-control" />
+                                <input type="text" id="hostName" name="hostName" class="form-control form-control" />
                                 <label class="form-label" for="hostName">Hostname</label>
                             </div>
 
@@ -410,10 +411,10 @@
                     </div>
 
                     <div class="modal-body">
-                        <label for="formFileSm" class="form-label">Select file for upload</label>
+                        <label for="firmwareFileUploadId" class="form-label">Select file for upload</label>
                         <input class="form-control form-control-sm" id="firmwareFileUploadId" type="file" />
                     </div>
-                    
+
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
                     </div>
@@ -424,10 +425,8 @@
 
     </main>
 
-    <script src="js/jquery.min.js"></script>
-    <script src="js/mdb.min.js"></script>
+    <script src="js/all.js"></script>
     <script>
-
         function updateHostName() {
             $.ajax({
                 type: "GET",

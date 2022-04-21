@@ -3,13 +3,31 @@
 #include <hash.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
-
 #include "WiFiManager.h"
 #include "configManager.h"
 #include "operations.h"
 #include "hardware.h"
 #include "homeKit2.h"
 #include "logging.h"
+#include "web.h"
+
+typedef struct
+{
+	const char *Path;
+	const unsigned char *Data;
+	const size_t Size;
+	const bool Zipped;
+} StaticFilesMap;
+
+const static StaticFilesMap staticFilesMap[] = {
+	{"/login.html", login_html_gz , login_html_gz_len, true},
+	{"/index.html", index_html_gz, index_html_gz_len, true},
+	{"/media/logo.png", logo_png_gz, logo_png_gz_len, false},
+	{"/media/favicon.png", favicon_png_gz, favicon_png_gz_len, false},
+	{"/media/logout.png", logout_png_gz, logout_png_gz_len, false},
+    {"/js/all.js", all_js, all_js_len, true},
+	{"/css/mdb.min.css", mdb_min_css_gz, mdb_min_css_gz_len, true},
+};
 
 WebServer WebServer::instance;
 
@@ -384,7 +402,6 @@ void WebServer::homekitReset(AsyncWebServerRequest *request)
 		return;
 	}
 
-
 	config::instance.data.homeKitPairData.resize(0);
 	config::instance.save();
 	redirectToRoot(request);
@@ -447,35 +464,54 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 		}
 	}
 
-	path = F("/web") + path;
-
 	const auto contentType = getContentType(path); // Get the MIME type
-	const auto pathWithGz = path + F(".gz");
-	if (LittleFS.exists(pathWithGz) || LittleFS.exists(path))
-	{ // If the file exists, either as a compressed archive, or normal
-		const bool gzipped = LittleFS.exists(pathWithGz);
-		if (gzipped)
-		{					  // If there's a compressed version available
-			path += F(".gz"); // Use the compressed version
-		}
 
-		auto response = request->beginResponse(LittleFS, path, contentType);
-		if (worksWithoutAuth)
-		{
-			response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
-		}
-
-		if (gzipped)
-		{
-			response->addHeader(F("Content-Encoding"), F("gzip"));
-		}
-		request->send(response);
-
-		LOG_DEBUG(F("Served file path:") << path);
-	}
-	else
+	for (auto &&entry : staticFilesMap)
 	{
-		handleNotFound(request);
+		if (request->url().equalsIgnoreCase(entry.Path))
+		{
+			AsyncResponseStream *response = request->beginResponseStream(contentType, 1024);
+			response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
+			response->write(entry.Data, entry.Size);
+			if (entry.Zipped)
+			{
+				response->addHeader(F("Content-Encoding"), F("gzip"));
+			}
+			request->send(response);
+			LOG_DEBUG(F("Served from Memory file path:") << path);
+			return;
+		}
+	}
+
+	{
+		path = F("/web") + path;
+		const auto pathWithGz = path + F(".gz");
+		if (LittleFS.exists(pathWithGz) || LittleFS.exists(path))
+		{ // If the file exists, either as a compressed archive, or normal
+			const bool gzipped = LittleFS.exists(pathWithGz);
+			if (gzipped)
+			{					  // If there's a compressed version available
+				path += F(".gz"); // Use the compressed version
+			}
+
+			auto response = request->beginResponse(LittleFS, path, contentType);
+			if (worksWithoutAuth)
+			{
+				response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
+			}
+
+			if (gzipped)
+			{
+				response->addHeader(F("Content-Encoding"), F("gzip"));
+			}
+			request->send(response);
+
+			LOG_DEBUG(F("Served file path:") << path);
+		}
+		else
+		{
+			handleNotFound(request);
+		}
 	}
 }
 
