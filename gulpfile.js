@@ -6,12 +6,13 @@ const gzip = require('gulp-gzip');
 const concat = require('gulp-concat');
 const imagemin = require('gulp-imagemin');
 const htmlvalidate = require('gulp-html');
+var browserSync = require('browser-sync').create();
 
 var log = require('fancy-log');
 
-const baseFolder = 'static/';
-const dataFolder = 'data/';
-const staticFolder = 'include/';
+const baseFolder = 'src/web/static/';
+const dataFolder = 'src/web/data/';
+const staticFolder = 'src/web/include/';
 
 var toMinifiedHtml = function(options) {
     return through.obj(function (source, encoding, callback) {
@@ -74,7 +75,6 @@ gulp.task('html', function() {
 gulp.task('js', function() {
     return gulp.src(baseFolder + '/js/*.js').
         pipe(gzip({ gzipOptions: { level: 9 } })).
-        pipe(concat('all.js')).
         pipe(gulp.dest(dataFolder)).
         pipe(toHeader(null, true)).
         pipe(gulp.dest(staticFolder));
@@ -91,10 +91,18 @@ gulp.task('css', function() {
 gulp.task('images', function() {
     return gulp.src(baseFolder + '/media/*.png').
         pipe(imagemin()).
-        pipe(gzip({ gzipOptions: { level: 9 } })).
         pipe(gulp.dest(dataFolder)).
         pipe(toHeader(null, true)).
         pipe(gulp.dest(staticFolder));
 });
 
 gulp.task('default', gulp.series('html', 'js', 'css', 'images'));
+
+// Static server
+gulp.task('webserver', function() {
+    browserSync.init({
+        server: {
+            baseDir: baseFolder
+        }
+    });
+});

@@ -19,13 +19,15 @@ typedef struct
 	const bool Zipped;
 } StaticFilesMap;
 
-const static StaticFilesMap staticFilesMap[] = {
-	{"/login.html", login_html_gz , login_html_gz_len, true},
+const static StaticFilesMap staticFilesMap[] PROGMEM = {
+	{"/login.html", login_html_gz, login_html_gz_len, true},
 	{"/index.html", index_html_gz, index_html_gz_len, true},
-	{"/media/logo.png", logo_png_gz, logo_png_gz_len, false},
-	{"/media/favicon.png", favicon_png_gz, favicon_png_gz_len, false},
-	{"/media/logout.png", logout_png_gz, logout_png_gz_len, false},
-    {"/js/all.js", all_js, all_js_len, true},
+	{"/media/logo.png", logo_png, logo_png_len, false},
+	{"/media/favicon.png", favicon_png, favicon_png_len, false},
+	{"/media/logout.png", logout_png, logout_png_len, false},
+	{"/media/settings.png", settings_png, settings_png_len, false},
+	{"/js/jquery.min.js", jquery_min_js_gz, jquery_min_js_gz_len, true},
+	{"/js/mdb.min.js", mdb_min_js_gz, mdb_min_js_gz_len, true},
 	{"/css/mdb.min.css", mdb_min_css_gz, mdb_min_css_gz_len, true},
 };
 
@@ -55,14 +57,12 @@ bool WebServer::manageSecurity(AsyncWebServerRequest *request)
 void WebServer::serverRouting()
 {
 	httpServer.on(PSTR("/login.handler"), HTTP_POST, handleLogin);
-	httpServer.on(PSTR("/logout.handler"), HTTP_GET, handleLogout);
+	httpServer.on(PSTR("/logout.handler"), HTTP_POST, handleLogout);
 	httpServer.on(PSTR("/wifiupdate.handler"), HTTP_POST, wifiUpdate);
 	httpServer.on(PSTR("/factory.reset.handler"), HTTP_POST, factoryReset);
 	httpServer.on(PSTR("/homekit.reset.handler"), HTTP_POST, homekitReset);
 	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
 	httpServer.on(PSTR("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
-	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
-	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
 
 	httpServer.on(PSTR("/api/sensor/get"), HTTP_GET, sensorGet);
 	httpServer.on(PSTR("/api/wifi/get"), HTTP_GET, wifiGet);
@@ -446,73 +446,44 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 	auto path = request->url();
 	LOG_DEBUG(F("handleFileRead: ") << path);
 
+	if (path.endsWith(F("/")) || path.isEmpty())
+	{
+		LOG_DEBUG(F("Redirecting to index page"));
+		path = F("/index.html");
+	}
+
 	const bool worksWithoutAuth = path.startsWith(F("/media/")) ||
 								  path.startsWith(F("/js/")) ||
 								  path.startsWith(F("/css/")) ||
-								  path.startsWith(F("/font/"));
+								  path.startsWith(F("/font/")) ||
+								  path.equalsIgnoreCase(F("/login.html"));
 
 	if (!worksWithoutAuth && !isAuthenticated(request))
 	{
 		LOG_DEBUG(F("Redirecting to login page"));
 		path = F("/login.html");
-	}
-	else
-	{
-		if (path.endsWith("/"))
-		{
-			path += F("/index.html"); // If a folder is requested, send the index file
-		}
-	}
+	} 
 
-	const auto contentType = getContentType(path); // Get the MIME type
+	const auto contentType = getContentType(path);
 
 	for (auto &&entry : staticFilesMap)
 	{
-		if (request->url().equalsIgnoreCase(entry.Path))
+		if (path.equalsIgnoreCase(entry.Path))
 		{
-			AsyncResponseStream *response = request->beginResponseStream(contentType, 1024);
+			auto response = request->beginResponse_P(200, contentType, entry.Data, entry.Size);
 			response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
-			response->write(entry.Data, entry.Size);
 			if (entry.Zipped)
 			{
 				response->addHeader(F("Content-Encoding"), F("gzip"));
 			}
 			request->send(response);
-			LOG_DEBUG(F("Served from Memory file path:") << path);
+			LOG_DEBUG(F("Served from Memory file path:") << path << F(" mimeType:") << contentType
+														 << F(" size:") << entry.Size);
 			return;
-		}
+		} 
 	}
 
-	{
-		path = F("/web") + path;
-		const auto pathWithGz = path + F(".gz");
-		if (LittleFS.exists(pathWithGz) || LittleFS.exists(path))
-		{ // If the file exists, either as a compressed archive, or normal
-			const bool gzipped = LittleFS.exists(pathWithGz);
-			if (gzipped)
-			{					  // If there's a compressed version available
-				path += F(".gz"); // Use the compressed version
-			}
-
-			auto response = request->beginResponse(LittleFS, path, contentType);
-			if (worksWithoutAuth)
-			{
-				response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
-			}
-
-			if (gzipped)
-			{
-				response->addHeader(F("Content-Encoding"), F("gzip"));
-			}
-			request->send(response);
-
-			LOG_DEBUG(F("Served file path:") << path);
-		}
-		else
-		{
-			handleNotFound(request);
-		}
-	}
+	handleNotFound(request);
 }
 
 /** Redirect to captive portal if we got a request for another domain.

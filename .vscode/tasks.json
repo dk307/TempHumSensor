@@ -30,6 +30,12 @@
 			"task": "js",
 			"problemMatcher": [],
 			"label": "gulp: js"
+		},
+		{
+			"type": "gulp",
+			"task": "webserver",
+			"problemMatcher": [],
+			"label": "gulp: webserver"
 		}
 	]
 }
