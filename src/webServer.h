@@ -22,6 +22,16 @@ private:
     static void homekitReset(AsyncWebServerRequest *request);
     static void restartDevice(AsyncWebServerRequest *request);
 
+    static void firmwareUpdateUpload(AsyncWebServerRequest *request,
+                                     const String &filename,
+                                     size_t index,
+                                     uint8_t *data,
+                                     size_t len,
+                                     bool final);
+    static void firmwareUpdateComplete(AsyncWebServerRequest *request);
+    
+    static void handleEarlyDisconnect();
+
     // ajax
     static void sensorGet(AsyncWebServerRequest *request);
     static void wifiGet(AsyncWebServerRequest *request);
@@ -37,6 +47,7 @@ private:
     static void handleFileRead(AsyncWebServerRequest *request);
     static bool isCaptivePortalRequest(AsyncWebServerRequest *request);
     static void redirectToRoot(AsyncWebServerRequest *request);
+    static void handleError(AsyncWebServerRequest *request, const String& error, int code);
 
     static bool isIp(const String &str);
     static String toStringIp(const IPAddress &ip);

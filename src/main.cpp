@@ -1,6 +1,4 @@
 #include <ESP8266WiFi.h>
-#include <LittleFS.h>
-#include <coredecls.h>
 
 #include "webServer.h"
 #include "configManager.h"
@@ -15,7 +13,6 @@ void setup(void)
 	Serial.begin(115200);
 	LOG_INFO(F("Before setup free heap: ") << ESP.getFreeHeap() / 1024 << " KB");
 
-	LittleFS.begin();
 	operations::instance.begin();
 	config::instance.begin();
 	WifiManager::instance.begin();

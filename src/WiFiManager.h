@@ -22,8 +22,6 @@ public:
 
     static IPAddress LocalIP();
     static String SSID();
-    static int8_t RSSI();
-    static int8_t RssiAsQuality();
     static void disconnect();
 
     static WifiManager instance;

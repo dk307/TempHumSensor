@@ -372,7 +372,6 @@
         </form>
         <!-- HomeKit Reset Modal End -->
 
-
         <!-- Information Modal Start-->
         <div class="modal fade" id="informationModal" tabindex="-1">
             <div class="modal-dialog">
@@ -393,7 +392,7 @@
                         </table>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
+                        <button class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
@@ -401,25 +400,45 @@
         <!-- Information Modal End -->
 
         <!-- Firmware Update Modal Start-->
-        <div class="modal fade" id="firmwareUpdateModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="firmwareUpdateModalLabel">Information</h5>
-                        <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
-                    </div>
+        <form class="needs-validation" id="firmwareUploadForm" method="post" action="/firmware.update.handler"
+            enctype="multipart/form-data">
+            <div class="modal fade" id="firmwareUpdateModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="firmwareUpdateModalLabel">Firmware Upgrade</h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
 
-                    <div class="modal-body">
-                        <label for="firmwareFileUploadId" class="form-label">Select file for upload</label>
-                        <input class="form-control form-control-sm" id="firmwareFileUploadId" type="file" />
-                    </div>
+                        <div class="modal-body">
+                            <div class="mb-4">
+                                <label for="firmwareFileUploadId" class="form-label">Select file for upload and
+                                    upgrade</label>
+                                <input class="form-control form-control-sm" id="firmwareFileUploadId" type="file"
+                                    name="firmwareFileUploadId" required />
+                            </div>
 
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
+                            <div class="mb-4" id="firmwareUploadStatusWrapper">
+                                <div>Upload Status:</div>
+                                <div class="progress" style="height: 10px;">
+                                    <div id="firmwareUploadProgressBar"
+                                        class="progress-bar progress-bar-striped progress-bar-animated"
+                                        role="progressbar" style="width: 0%;"></div>
+                                </div>
+                                <div id="firmwareUploadStatus"></div>
+                            </div>
+
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="btn btn-primary">Upgrade</button>
+                            <button class="btn btn-secondary" data-mdb-dismiss="modal">Cancel</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
         <!-- Firmware update Modal End -->
 
     </main>
@@ -451,13 +470,15 @@
                     async: true,
                     dataType: "json",
                     success: function (data) {
-                        if (data.hasOwnProperty('temperatureC')) {
-                            var tempC = data['temperatureC'];
-                            var tempF = tempC * 9 / 5 + 32;
-                            $('#temperatureC').html(tempC);
-                            $('#temperatureF').html(Math.round(tempF * 10) / 10);
+                        if (data != null) {
+                            if (data.hasOwnProperty('temperatureC')) {
+                                var tempC = data['temperatureC'];
+                                var tempF = tempC * 9 / 5 + 32;
+                                $('#temperatureC').html(tempC);
+                                $('#temperatureF').html(Math.round(tempF * 10) / 10);
+                            }
+                            $('#humidity').html(data['humidity']);
                         }
-                        $('#humidity').html(data['humidity']);
                     }
                 });
             }
@@ -499,97 +520,147 @@
             });
         }
 
-        var sensorUpdateIntervalID = setInterval(updateSensorValues, 10000); // root sensor 
+        var sensorUpdateIntervalID;
         var informationUpdateRefreshInterval;
         var homekitUpdateRefreshInterval;
 
-        // Wifi Password toggle
-        $('#wifitooglepassword').change(function () {
-            let input = $('#wifipassword');
-            if (input.attr('type') == 'password') {
-                input.attr('type', 'text');
-            } else {
-                input.attr('type', 'password');
-            }
-        });
-
-        // Login Password toggle
-        $('#webPasswordToggle').change(function () {
-            let input = $('#webPassword');
-            if (input.attr('type') == 'password') {
-                input.attr('type', 'text');
-            } else {
-                input.attr('type', 'password');
-            }
-        });
-
-        document.getElementById('wifiSettingsModal').addEventListener('show.mdb.modal', (e) => {
-            $.ajax({
-                type: "GET",
-                url: "/api/wifi/get",
-                dataType: "json",
-                success: function (data) {
-                    $('#ssid').val(data["ssid"]);
-                },
-                error: function () {
-                    $('#ssid').val('');
-                    console.warn('Failed to update');
+        $(document).ready(function () {
+            // Wifi Password toggle
+            $('#wifitooglepassword').change(function () {
+                let input = $('#wifipassword');
+                if (input.attr('type') == 'password') {
+                    input.attr('type', 'text');
+                } else {
+                    input.attr('type', 'password');
                 }
+            });
+
+            // Login Password toggle
+            $('#webPasswordToggle').change(function () {
+                let input = $('#webPassword');
+                if (input.attr('type') == 'password') {
+                    input.attr('type', 'text');
+                } else {
+                    input.attr('type', 'password');
+                }
+            });
+
+            document.getElementById('wifiSettingsModal').addEventListener('show.mdb.modal', (e) => {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/wifi/get",
+                    dataType: "json",
+                    success: function (data) {
+                        $('#ssid').val(data["ssid"]);
+                    },
+                    error: function () {
+                        $('#ssid').val('');
+                        console.warn('Failed to update');
+                    }
+                });
+            });
+
+            document.getElementById('websiteLoginModal').addEventListener('show.mdb.modal', (e) => {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/config/get",
+                    dataType: "json",
+                    success: function (data) {
+                        $('#webUserName').val(data["webusername"]);
+                    },
+                    error: function () {
+                        $('#webUserName').val('');
+                        console.warn('Failed to update');
+                    }
+                });
+            });
+
+            document.getElementById('otherSettingsModal').addEventListener('show.mdb.modal', (e) => {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/config/get",
+                    dataType: "json",
+                    success: function (data) {
+                        $('#hostName').val(data["hostname"]);
+                        $('#sensorsRefreshInterval').val(data["sensorsrefreshinterval"] / 1000);
+                        $('#showDisplayInF').prop('checked', data["showdisplayinf"]);
+                        $('#showDisplayInF').val(data["showdisplayinf"] ? "1" : "0");
+                    },
+                    error: function () {
+                        console.warn('Failed to update');
+                    }
+                });
+            });
+
+            document.getElementById('informationModal').addEventListener('show.mdb.modal', (e) => {
+                updateInformation();
+                informationUpdateRefreshInterval = setInterval(updateInformation, 10000);
+            });
+
+            document.getElementById('informationModal').addEventListener('hide.mdb.modal', (e) => {
+                clearInterval(informationUpdateRefreshInterval);
+            });
+
+            document.getElementById('homekitModal').addEventListener('show.mdb.modal', (e) => {
+                updateHomeKit();
+                homekitUpdateRefreshInterval = setInterval(updateHomeKit, 10000);
+            });
+
+            document.getElementById('homekitModal').addEventListener('hide.mdb.modal', (e) => {
+                clearInterval(homekitUpdateRefreshInterval);
+            });
+
+            document.getElementById('firmwareUploadForm').addEventListener('show.mdb.modal', (e) => {
+                $("#firmwareUploadStatusWrapper").hide();
+            });
+
+            // File upload via Ajax
+            $("#firmwareUploadForm").on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    xhr: function () {
+                        var xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener("progress", function (evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = ((evt.loaded / evt.total) * 100).toFixed();
+                                $("#firmwareUploadProgressBar").width(percentComplete + '%');
+                                $("#firmwareUploadProgressBar").html('<span class="text-center">' + percentComplete + '%</span>');
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    type: 'POST',
+                    url: '/firmware.update.handler',
+                    data: new FormData(this),
+                    contentType: false,
+                    cache: false,
+                    processData: false,
+                    beforeSend: function () {
+                        $("#firmwareUploadProgressBar").width('0%');
+                        $('#firmwareUploadStatus').html('');
+                        $("#firmwareUploadStatusWrapper").show();
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        if (jqXHR.status == 500) {
+                            $('#firmwareUploadStatus').html('<div class="text-danger" id="firmwareUpgradeError"></div>');
+                            $('#firmwareUpgradeError').text(jqXHR.responseText);
+                        } else {
+                            $('#firmwareUploadStatus').html('<div class="text-danger">File upload failed, please try again.</div>');
+                        }
+                    },
+                    success: function (resp) {
+                        $('#firmwareUploadForm')[0].reset();
+                        $('#firmwareUploadStatus').html('<div class="text-success">File has uploaded successfully!</div>');
+                    }
+                });
             });
         });
 
-        document.getElementById('websiteLoginModal').addEventListener('show.mdb.modal', (e) => {
-            $.ajax({
-                type: "GET",
-                url: "/api/config/get",
-                dataType: "json",
-                success: function (data) {
-                    $('#webUserName').val(data["webusername"]);
-                },
-                error: function () {
-                    $('#webUserName').val('');
-                    console.warn('Failed to update');
-                }
-            });
+        $(document).ready(function () {
+            updateSensorValues();
+            updateHostName();
+            sensorUpdateIntervalID = setInterval(updateSensorValues, 10000); // root sensor 
         });
-
-        document.getElementById('otherSettingsModal').addEventListener('show.mdb.modal', (e) => {
-            $.ajax({
-                type: "GET",
-                url: "/api/config/get",
-                dataType: "json",
-                success: function (data) {
-                    $('#hostName').val(data["hostname"]);
-                    $('#sensorsRefreshInterval').val(data["sensorsrefreshinterval"] / 1000);
-                    $('#showDisplayInF').prop('checked', data["showdisplayinf"]);
-                    $('#showDisplayInF').val(data["showdisplayinf"] ? "1" : "0");
-                },
-                error: function () {
-                    console.warn('Failed to update');
-                }
-            });
-        });
-
-        document.getElementById('informationModal').addEventListener('show.mdb.modal', (e) => {
-            updateInformation();
-            informationUpdateRefreshInterval = setInterval(updateInformation, 10000);
-        });
-
-        document.getElementById('informationModal').addEventListener('hide.mdb.modal', (e) => {
-            clearInterval(informationUpdateRefreshInterval);
-        });
-
-        document.getElementById('homekitModal').addEventListener('show.mdb.modal', (e) => {
-            updateHomeKit();
-            homekitUpdateRefreshInterval = setInterval(updateHomeKit, 10000);
-        });
-
-        document.getElementById('homekitModal').addEventListener('hide.mdb.modal', (e) => {
-            clearInterval(homekitUpdateRefreshInterval);
-        });
-
-        updateSensorValues();
-        updateHostName();
     </script>
 </body>
 

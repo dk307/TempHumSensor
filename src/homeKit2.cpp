@@ -87,7 +87,7 @@ void homeKit2::updatePassword(const char *password)
 
 void homeKit2::updateChaValue(homekit_characteristic_t &cha, float value)
 {
-    LOG_INFO(F("Name:") << value);
+    LOG_TRACE(F("Name:") << value);
     if (!isnan(value))
     {
         cha.value.is_null = false;

@@ -7,6 +7,8 @@ const concat = require('gulp-concat');
 const imagemin = require('gulp-imagemin');
 const htmlvalidate = require('gulp-html');
 var browserSync = require('browser-sync').create();
+var watch = require('gulp-watch');
+var reload = browserSync.reload;
 
 var log = require('fancy-log');
 
@@ -98,11 +100,19 @@ gulp.task('images', function() {
 
 gulp.task('default', gulp.series('html', 'js', 'css', 'images'));
 
-// Static server
-gulp.task('webserver', function() {
+
+gulp.task('serve', function() {
     browserSync.init({
         server: {
             baseDir: baseFolder
         }
     });
 });
+
+gulp.task('watchHtml', function() {gulp.watch(baseFolder +'**/*.html', reload)});
+gulp.task('watchJs', function() {gulp.watch(baseFolder +'**/*.js', reload)});
+gulp.task('watchCss', function() {gulp.watch(baseFolder +'**/*.css', reload)});
+gulp.task('watchPng', function() {gulp.watch(baseFolder +'**/*.png', reload)});
+
+// Static server
+gulp.task('webserver', gulp.parallel(['serve', 'watchHtml', 'watchJs', 'watchCss', 'watchPng']));

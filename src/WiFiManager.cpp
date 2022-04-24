@@ -185,31 +185,6 @@ String WifiManager::SSID()
     return WiFi.SSID();
 }
 
-int8_t WifiManager::RSSI()
-{
-    return WiFi.RSSI();
-}
-
-int8_t WifiManager::RssiAsQuality()
-{
-    const int8_t rssi = WiFi.RSSI();
-    int quality = 0;
-
-    if (rssi <= -100)
-    {
-        quality = 0;
-    }
-    else if (rssi >= -50)
-    {
-        quality = 100;
-    }
-    else
-    {
-        quality = 2 * (rssi + 100);
-    }
-    return quality;
-}
-
 // captive portal loop
 void WifiManager::loop()
 {
