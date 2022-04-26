@@ -23,11 +23,12 @@ operations operations::instance;
 
 void operations::factoryReset()
 {
-	LOG_INFO("Doing Factory Reset");
+	LOG_INFO(F("Doing Factory Reset"));
+	ESP.eraseConfig();
 	system_restore();
 	config::erase();
 	LittleFS.format();
-	ESP.reset();
+	reset();
 }
 
 void operations::begin()
@@ -56,7 +57,7 @@ bool operations::beginFS()
 		return true;
 	}
 
-	LOG_DEBUG(F("Failed to mount, formating FS"));
+	LOG_INFO(F("Failed to mount, formating FS"));
 	LittleFS.format();
 	if (!LittleFS.begin())
 	{
@@ -79,16 +80,16 @@ bool operations::startUpdate(size_t length, String &error)
 	LOG_INFO(F("Current Sketch size:") << ESP.getSketchSize());
 	LOG_INFO(F("Free sketch space:") << ESP.getFreeSketchSpace());
 
- 	const uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+	const uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 	if (Update.begin(maxSketchSpace))
 	{
-		LOG_DEBUG(F("Update begin successful"));
+		LOG_DEBUG(F("Update begin successfull"));
 		return true;
 	}
 	else
 	{
 		getUpdateError(error);
-		LOG_DEBUG(F("Update begin failed with ") << error);
+		LOG_ERROR(F("Update begin failed with ") << error);
 		return false;
 	}
 }
@@ -108,7 +109,7 @@ bool operations::writeUpdate(const uint8_t *data, size_t length, String &error)
 	else
 	{
 		getUpdateError(error);
-		LOG_DEBUG(F("Update write failed with ") << error);
+		LOG_ERROR(F("Update write failed with ") << error);
 		return false;
 	}
 }
@@ -124,7 +125,7 @@ bool operations::endUpdate(String &error)
 	else
 	{
 		getUpdateError(error);
-		LOG_DEBUG(F("Update end failed with ") << error);
+		LOG_ERROR(F("Update end failed with ") << error);
 		return false;
 	}
 }
@@ -149,9 +150,17 @@ void operations::loop()
 	}
 
 	if (rebootPending)
-	{
-		LOG_INFO(F("Restarting..."));
-		rebootPending = false;
-		ESP.reset();
+	{		
+		rebootPending = false;	 
+		reset();
 	}
+}
+
+[[noreturn]] void operations::reset() {
+	LOG_INFO(F("Restarting..."));
+	delay(2000); // for http response, etc to finish
+    ESP.restart();
+    for (;;) {
+        delay(100);
+    }
 }

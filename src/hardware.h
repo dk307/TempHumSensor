@@ -1,6 +1,6 @@
 #pragma once
 
-#define SSD1306_NO_SPLASH 
+#define SSD1306_NO_SPLASH
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <Adafruit_SSD1306.h>
@@ -10,7 +10,7 @@
 
 #include "changeCallback.h"
 
-class hardware 
+class hardware
 {
 public:
     void begin();
@@ -47,10 +47,10 @@ private:
     Adafruit_SSD1306 display{128, 64, &Wire, -1};
 
     bool refreshDisplay{false};
-
+    bool updateTempNow{true};
 
     bool dhtUpdate();
     void updateDisplay();
-    void display2Lines(const String& first, const String& second);
+    void display2Lines(const String &first, const String &second);
     static float roundPlaces(float val, int places);
 };

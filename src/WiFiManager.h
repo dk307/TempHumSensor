@@ -22,7 +22,7 @@ public:
 
     static IPAddress LocalIP();
     static String SSID();
-    static void disconnect();
+    void disconnect(bool disconnectWifi);
 
     static WifiManager instance;
 
@@ -44,5 +44,4 @@ private:
 
     static String getRFC952Hostname(const String &name);
 };
-
 #endif

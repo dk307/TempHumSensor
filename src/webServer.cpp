@@ -60,14 +60,16 @@ void WebServer::serverRouting()
 	httpServer.on(PSTR("/login.handler"), HTTP_POST, handleLogin);
 	httpServer.on(PSTR("/logout.handler"), HTTP_POST, handleLogout);
 	httpServer.on(PSTR("/wifiupdate.handler"), HTTP_POST, wifiUpdate);
-	httpServer.on(PSTR("/factory.reset.handler"), HTTP_POST, factoryReset);
-	httpServer.on(PSTR("/homekit.reset.handler"), HTTP_POST, homekitReset);
-	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
+	
+
 	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
 	httpServer.on(PSTR("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
 
 	// ajax form call
+	httpServer.on(PSTR("/factory.reset.handler"), HTTP_POST, factoryReset);
+	httpServer.on(PSTR("/homekit.reset.handler"), HTTP_POST, homekitReset);
 	httpServer.on(PSTR("/firmware.update.handler"), HTTP_POST, firmwareUpdateComplete, firmwareUpdateUpload);
+	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
 
 	// json ajax calls
 	httpServer.on(PSTR("/api/sensor/get"), HTTP_GET, sensorGet);
@@ -380,7 +382,7 @@ void WebServer::restartDevice(AsyncWebServerRequest *request)
 		return;
 	}
 
-	redirectToRoot(request);
+	request->send(200);
 	operations::instance.reboot();
 }
 
@@ -393,7 +395,7 @@ void WebServer::factoryReset(AsyncWebServerRequest *request)
 		return;
 	}
 
-	redirectToRoot(request);
+	request->send(200);
 	operations::instance.factoryReset();
 }
 
@@ -421,7 +423,7 @@ void WebServer::homekitReset(AsyncWebServerRequest *request)
 
 	config::instance.data.homeKitPairData.resize(0);
 	config::instance.save();
-	redirectToRoot(request);
+	request->send(200);
 	operations::instance.reboot();
 }
 
@@ -537,7 +539,7 @@ void WebServer::handleNotFound(AsyncWebServerRequest *request)
 
 	for (unsigned int i = 0; i < request->args(); i++)
 	{
-		message += " " + request->argName(i) + ": " + request->arg(i) + "\n";
+		message += F(" ") + request->argName(i) + F(": ") + request->arg(i) + "\n";
 	}
 
 	handleError(request, message, 404);

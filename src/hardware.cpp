@@ -60,7 +60,7 @@ bool hardware::dhtUpdate()
 {
     bool changed = false;
     const auto now = millis();
-    if (now - lastRead > config::instance.data.sensorsRefreshInterval)
+    if ((now - lastRead > config::instance.data.sensorsRefreshInterval) || updateTempNow)
     {
         const auto temp = roundPlaces(dht.readTemperature(), 1);
         const auto hum = roundPlaces(dht.readHumidity(), 0);
@@ -75,14 +75,16 @@ bool hardware::dhtUpdate()
 
         if (humidity != hum)
         {
+
             LOG_DEBUG(F("Hum: ") << hum);
             humidity = hum;
             changed = true;
             humidityChangeCallback.callChangeListeners();
         }
         lastRead = now;
+        updateTempNow = false;
     }
-    
+
     return changed;
 }
 

@@ -65,15 +65,15 @@ int8_t WifiManager::waitForConnectResult(unsigned long timeoutLength)
     return -1; // -1 indicates timeout
 }
 
-void WifiManager::disconnect()
+void WifiManager::disconnect(bool disconnectWifi)
 {
-    WiFi.disconnect();
+    WiFi.disconnect(disconnectWifi);
 }
 
 // function to forget current WiFi details and start a captive portal
 void WifiManager::forget()
 {
-    disconnect();
+    disconnect(false);
     startCaptivePortal();
   
     LOG_INFO(F("Requested to forget WiFi. Started Captive portal."));
