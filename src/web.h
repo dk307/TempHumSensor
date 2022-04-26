@@ -9,3 +9,4 @@
 #include "web/include/settings.png.h"
 #include "web/include/jquery.min.js.gz.h"
 #include "web/include/mdb.min.js.gz.h"
+#include "web/include/spark_md5.min.js.gz.h"

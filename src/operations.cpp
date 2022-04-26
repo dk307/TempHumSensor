@@ -74,13 +74,19 @@ void operations::reboot()
 	rebootPending = true;
 }
 
-bool operations::startUpdate(size_t length, String &error)
+bool operations::startUpdate(size_t length, const String &md5, String &error)
 {
 	LOG_INFO(F("Update call start with length:") << length);
 	LOG_INFO(F("Current Sketch size:") << ESP.getSketchSize());
 	LOG_INFO(F("Free sketch space:") << ESP.getFreeSketchSpace());
 
 	const uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+	if (Update.setMD5(md5.c_str()))
+	{
+		LOG_ERROR(F("Md5 Invalid") << error);
+		return false;
+	}
+
 	if (Update.begin(maxSketchSpace))
 	{
 		LOG_DEBUG(F("Update begin successfull"));
@@ -150,17 +156,19 @@ void operations::loop()
 	}
 
 	if (rebootPending)
-	{		
-		rebootPending = false;	 
+	{
+		rebootPending = false;
 		reset();
 	}
 }
 
-[[noreturn]] void operations::reset() {
+[[noreturn]] void operations::reset()
+{
 	LOG_INFO(F("Restarting..."));
 	delay(2000); // for http response, etc to finish
-    ESP.restart();
-    for (;;) {
-        delay(100);
-    }
+	ESP.restart();
+	for (;;)
+	{
+		delay(100);
+	}
 }

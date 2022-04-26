@@ -27,6 +27,7 @@ const static StaticFilesMap staticFilesMap[] PROGMEM = {
 	{"/media/logout.png", logout_png, logout_png_len, false},
 	{"/media/settings.png", settings_png, settings_png_len, false},
 	{"/js/jquery.min.js", jquery_min_js_gz, jquery_min_js_gz_len, true},
+	{"/js/spark_md5.min.js", spark_md5_min_js_gz, spark_md5_min_js_gz_len, true},
 	{"/js/mdb.min.js", mdb_min_js_gz, mdb_min_js_gz_len, true},
 	{"/css/mdb.min.css", mdb_min_css_gz, mdb_min_css_gz_len, true},
 };
@@ -34,6 +35,7 @@ const static StaticFilesMap staticFilesMap[] PROGMEM = {
 WebServer WebServer::instance;
 
 static const char JsonMediaType[] PROGMEM = "application/json";
+static const char TextPlainMediaType[] PROGMEM = "text/plain";
 
 void WebServer::begin()
 {
@@ -60,7 +62,6 @@ void WebServer::serverRouting()
 	httpServer.on(PSTR("/login.handler"), HTTP_POST, handleLogin);
 	httpServer.on(PSTR("/logout.handler"), HTTP_POST, handleLogout);
 	httpServer.on(PSTR("/wifiupdate.handler"), HTTP_POST, wifiUpdate);
-	
 
 	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
 	httpServer.on(PSTR("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
@@ -237,11 +238,11 @@ bool WebServer::isAuthenticated(AsyncWebServerRequest *request)
 
 		if (cookie.indexOf(F("ESPSESSIONID=") + token) != -1)
 		{
-			LOG_TRACE("Authentication Successful");
+			LOG_TRACE(F("Authentication Successful"));
 			return true;
 		}
 	}
-	LOG_TRACE("Authentication Failed");
+	LOG_TRACE(F("Authentication Failed"));
 	return false;
 }
 
@@ -438,7 +439,7 @@ String WebServer::getContentType(const String &filename)
 	else if (filename.endsWith(F(".js")))
 		return F("application/javascript");
 	else if (filename.endsWith(F(".json")))
-		return F("application/json");
+		return JsonMediaType;
 	else if (filename.endsWith(F(".png")))
 		return F("image/png");
 	else if (filename.endsWith(F(".gif")))
@@ -457,7 +458,7 @@ String WebServer::getContentType(const String &filename)
 		return F("application/x-zip");
 	else if (filename.endsWith(F(".gz")))
 		return F("application/x-gzip");
-	return F("text/plain");
+	return TextPlainMediaType;
 }
 
 void WebServer::handleFileRead(AsyncWebServerRequest *request)
@@ -512,7 +513,7 @@ bool WebServer::isCaptivePortalRequest(AsyncWebServerRequest *request)
 	if (!isIp(request->host()))
 	{
 		LOG_INFO(F("Request redirected to captive portal"));
-		AsyncWebServerResponse *response = request->beginResponse(302, F("text/plain"));
+		AsyncWebServerResponse *response = request->beginResponse(302, TextPlainMediaType);
 		response->addHeader(F("Location"), String(F("http://")) + toStringIp(request->client()->localIP()));
 		request->send(response);
 		return true;
@@ -580,6 +581,8 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 {
 	LOG_DEBUG(F("firmwareUpdateUpload"));
 
+	const auto MD5Parameter = F("firmwareFileUploadMd5Id");
+
 	if (!manageSecurity(request))
 	{
 		return;
@@ -588,7 +591,20 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 	String error;
 	if (!index)
 	{
-		if (operations::instance.startUpdate(request->contentLength(), error))
+		String md5;
+
+		if (request->hasParam(MD5Parameter, true))
+		{
+			md5 = request->getParam(MD5Parameter, true)->value();
+		}
+
+		if (md5.length() != 32)
+		{
+			handleError(request, F("MD5 parameter invalid. Check file exists."), 500);
+			return;
+		}
+
+		if (operations::instance.startUpdate(request->contentLength(), md5, error))
 		{
 			// success, let's make sure we end the update if the client hangs up
 			request->onDisconnect(handleEarlyDisconnect);
@@ -596,6 +612,7 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 		else
 		{
 			handleError(request, error, 500);
+			return;
 		}
 	}
 
@@ -619,7 +636,7 @@ void WebServer::handleError(AsyncWebServerRequest *request, const String &messag
 	{
 		LOG_INFO(message);
 	}
-	AsyncWebServerResponse *response = request->beginResponse(code, F("text/plain"), message);
+	AsyncWebServerResponse *response = request->beginResponse(code, TextPlainMediaType, message);
 	response->addHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
 	response->addHeader(F("(Pragma"), F("no-cache"));
 	response->addHeader(F("Expires"), F("-1"));

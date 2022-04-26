@@ -9,6 +9,7 @@ const htmlvalidate = require('gulp-html');
 var browserSync = require('browser-sync').create();
 var watch = require('gulp-watch');
 var reload = browserSync.reload;
+var stripcomments = require('gulp-strip-comments');
 
 var log = require('fancy-log');
 
@@ -76,6 +77,7 @@ gulp.task('html', function() {
 
 gulp.task('js', function() {
     return gulp.src(baseFolder + '/js/*.js').
+        pipe(stripcomments()).
         pipe(gzip({ gzipOptions: { level: 9 } })).
         pipe(gulp.dest(dataFolder)).
         pipe(toHeader(null, true)).

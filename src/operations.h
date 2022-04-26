@@ -12,7 +12,7 @@ public:
     void loop();
 
     void factoryReset();
-    bool startUpdate(size_t length, String &error);
+    bool startUpdate(size_t length, const String& md5, String &error);
     bool writeUpdate(const uint8_t *data, size_t length, String &error);
     bool endUpdate(String &error);
 
