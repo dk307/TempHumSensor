@@ -225,7 +225,7 @@
                         <div class="modal-body">
                             <h5 class="d-inline-flex justify-content-start align-items-center">
                                 <span class="spinner-border text-primary" role="status">
-                                </span>&nbsp;&nbsp;Loading ...
+                                </span>&nbsp;&nbsp;<span id="reloadLoadingMessageId">Loading ...</span>
                             </h5>
                             <button type="submit" class="btn btn-info float-end" id="confirmActionModalRedirecting">Load
                                 Now</button>
@@ -333,7 +333,7 @@
                         </table>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-danger" data-mdb-toggle="modal" data-mdb-dismiss="modal"
+                        <button type="button" class="btn btn-danger" data-mdb-dismiss="modal"
                             id="forgetHomeKitPairingButtonId">Forget HomeKit Pairing</button>
                         <button type="submit" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
                     </div>
@@ -386,13 +386,12 @@
                             <div class="mb-4">
                                 <input class="form-control" id="firmwareFileUploadId" type="file"
                                     name="firmwareFileUploadId" required />
-                                    <input id="firmwareFileUploadMd5Id" type="hidden" name="firmwareFileUploadMd5Id" />
                             </div>
                             <div class="mb-4" id="firmwareUploadStatusWrapper">
                                 <div>Upload Status:</div>
                                 <div class="progress" style="height: 15px;">
-                                    <div id="firmwareUploadProgressBar"
-                                        class="progress-bar" role="progressbar" style="width: 0%;"></div>
+                                    <div id="firmwareUploadProgressBar" class="progress-bar" role="progressbar"
+                                        style="width: 0%;"></div>
                                 </div>
                                 <div id="firmwareUploadStatus"></div>
                             </div>
@@ -498,6 +497,7 @@
         var sensorUpdateIntervalID;
         var informationUpdateRefreshInterval;
         var homekitUpdateRefreshInterval;
+        var firmwareFileUploadMd5;
 
         $(document).ready(function () {
             // Wifi Password toggle
@@ -654,6 +654,7 @@
                     contentType: false,
                     cache: false,
                     processData: false,
+                    headers: { 'md5': firmwareFileUploadMd5 },
                     beforeSend: function () {
                         $("#firmwareUploadProgressBar").width('0%');
                         $('#firmwareUploadStatus').html('');
@@ -668,13 +669,18 @@
                         }
                     },
                     success: function (resp) {
-                        $('#firmwareUploadForm')[0].reset();
-                        $('#firmwareUploadStatus').html('<div class="text-success">File has uploaded successfully!</div>');
+                        $('#reloadLoadingMessageId').html('Update successful. Loading...');
+                        $('#firmwareUpdateModal').modal('hide');
+                        $('#redirectingModal').modal('show');
+                        setTimeout(function () {
+                            $('#confirmActionModalRedirecting').trigger('click');
+                        }, 7000);
                     }
                 });
             });
 
             // md5
+
             document.getElementById('firmwareFileUploadId').addEventListener('change', function () {
 
                 if (this.files[0].size > 1024 * 1024) {
@@ -703,7 +709,7 @@
                         loadNext();
                     } else {
                         console.info('computed hash', spark.end());  // Compute hash
-                        $("#firmwareFileUploadMd5Id").val(spark.end());
+                        firmwareFileUploadMd5 = spark.end();
                     }
                 };
 
