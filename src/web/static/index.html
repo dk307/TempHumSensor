@@ -45,16 +45,9 @@
             <div class="row row-cols-1 row-cols-md-2 g-4">
                 <div class="col">
                     <div class="card">
-                        <div class="card-header">Temperature(C)</div>
+                        <div class="card-header">Temperature</div>
                         <div class="card-body">
                             <p class="card-text"><span id="temperatureC">?</span>&nbsp;C</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card">
-                        <div class="card-header">Temperature(F)</div>
-                        <div class="card-body">
                             <p class="card-text"><span id="temperatureF">?</span>&nbsp;F</p>
                         </div>
                     </div>
@@ -69,7 +62,6 @@
                 </div>
             </div>
         </div>
-
 
         <!-- Settings Modal Start -->
         <div class="modal fade" id="settingsModal" tabindex="-1">
@@ -109,13 +101,19 @@
                                     data-mdb-dismiss="modal" data-mdb-target="#informationModal">Information</button>
                             </div>
                             <div class="p-2">
-                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
-                                    data-mdb-dismiss="modal" data-mdb-target="#restartModal">Restart</button>
+                                <button type="button" class="btn btn-info btn-block" data-mdb-dismiss="modal"
+                                    id="restartDeviceButtonId">Restart</button>
                             </div>
 
                             <div class="p-2">
-                                <button type="button" class="btn btn-danger btn-block" data-mdb-toggle="modal"
-                                    data-mdb-dismiss="modal" data-mdb-target="#factoryResetModal">Factory Reset</button>
+                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#firmwareUpdateModal">Firmware
+                                    update</button>
+                            </div>
+
+                            <div class="p-2">
+                                <button type="button" class="btn btn-danger btn-block" data-mdb-dismiss="modal"
+                                    id="factoryResetButtonId">Factory Reset</button>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -133,8 +131,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="wifiSettingsModalLabel"> <img src="media/wifi.png" height="20"
-                                    alt="Wifi Settings" loading="lazy" />&nbsp;Wifi Settings</h5>
+                            <h5 class="modal-title" id="wifiSettingsModalLabel">Wifi Settings</h5>
                             <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                         </div>
 
@@ -165,20 +162,28 @@
         </form>
         <!-- Wifi Settings Modal End -->
 
-
-        <!-- Restart Modal Start-->
-        <form class="needs-validation" action="/restart.handler" method="post">
-            <div class="modal fade" id="restartModal" tabindex="-1">
+        <!-- Confirm Action Modal Start-->
+        <form id="confirmActionForm" method="post">
+            <div class="modal fade" id="confirmActionModal" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="restartModalLabel">Confirm Restart</h5>
+                            <h5 class="modal-title" id="confirmActionLabel">Confirm</h5>
                             <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                         </div>
 
                         <div class="modal-body">
-                            <span class="justify-left">Do you want to restart ?</span>
+                            <div class="mb-4">
+                                <span class="justify-left">Do you want to </span>
+                                <span class="justify-left" id="confirmAction"></span>
+                                <span class="justify-left">?</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="text-danger" id="confirmActionStatus"></div>
+                            </div>
                         </div>
+
                         <div class="modal-footer">
                             <button type="submit" class="btn btn-primary">Yes</button>
                             <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">No</button>
@@ -187,7 +192,7 @@
                 </div>
             </div>
         </form>
-        <!-- Restart Modal End -->
+        <!-- Confirm Action Modal End -->
 
         <!-- Logout Modal Start-->
         <form class="needs-validation" action="/logout.handler" method="post">
@@ -212,29 +217,24 @@
         </form>
         <!-- Restart Modal End -->
 
-        <!-- Factory Reset Modal Start-->
-        <form class="needs-validation" action="/factory.reset.handler" method="post">
-            <div class="modal fade" id="factoryResetModal" tabindex="-1">
+        <!-- Redirecting Modal Start-->
+        <form method="get" action="/">
+            <div class="modal fade" id="redirectingModal" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="factoryResetModalLabel">Confirm Factory Reset</h5>
-                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
-                        </div>
-
                         <div class="modal-body">
-                            <span class="justify-left">Do you want to factory reset ?</span>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="submit" class="btn btn-danger">Yes</button>
-                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">No</button>
+                            <h5 class="d-inline-flex justify-content-start align-items-center">
+                                <span class="spinner-border text-primary" role="status">
+                                </span>&nbsp;&nbsp;<span id="reloadLoadingMessageId">Loading ...</span>
+                            </h5>
+                            <button type="submit" class="btn btn-info float-end" id="confirmActionModalRedirecting">Load
+                                Now</button>
                         </div>
                     </div>
                 </div>
             </div>
         </form>
-        <!-- Factory Reset Modal End -->
-
+        <!-- Redirecting Modal End -->
 
         <!-- Website Login Modal Start-->
         <form class="needs-validation" action="/weblogin.update.handler" method="post">
@@ -285,7 +285,7 @@
 
                         <div class="modal-body">
                             <div class="form-outline mb-4">
-                                <input type="test" id="hostName" name="hostName" class="form-control form-control" />
+                                <input type="text" id="hostName" name="hostName" class="form-control form-control" />
                                 <label class="form-label" for="hostName">Hostname</label>
                             </div>
 
@@ -313,7 +313,6 @@
         </form>
         <!-- Other Settings Modal End -->
 
-
         <!-- HomeKit Modal Start-->
         <div class="modal fade" id="homekitModal" tabindex="-1">
             <div class="modal-dialog">
@@ -334,39 +333,14 @@
                         </table>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-danger" data-mdb-toggle="modal" data-mdb-dismiss="modal"
-                            data-mdb-target="#homekitResetModal">Forget HomeKit Pairing</button>
+                        <button type="button" class="btn btn-danger" data-mdb-dismiss="modal"
+                            id="forgetHomeKitPairingButtonId">Forget HomeKit Pairing</button>
                         <button type="submit" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
         </div>
         <!-- Homekit Modal End -->
-
-        <!-- HomeKit Reset Modal Start-->
-        <form class="needs-validation" action="/homekit.reset.handler" method="post">
-            <div class="modal fade" id="homekitResetModal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="homekitResetModalLabel">Confirm HomeKit Factory Pairing Forget
-                            </h5>
-                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
-                        </div>
-
-                        <div class="modal-body">
-                            <span class="justify-left">Do you want to confirm HomeKit Factory Pairing ?</span>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="submit" class="btn btn-danger">Yes</button>
-                            <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">No</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </form>
-        <!-- HomeKit Reset Modal End -->
-
 
         <!-- Information Modal Start-->
         <div class="modal fade" id="informationModal" tabindex="-1">
@@ -388,19 +362,56 @@
                         </table>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
+                        <button class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
         </div>
         <!-- Information Modal End -->
 
+        <!-- Firmware Update Modal Start-->
+        <form class="needs-validation" id="firmwareUploadForm" method="post" enctype="multipart/form-data">
+            <div class="modal fade" id="firmwareUpdateModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="firmwareUpdateModalLabel">Firmware Upgrade</h5>
+                            <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="mb-1">
+                                <div>Select file for upload and upgrade</div>
+                            </div>
+                            <div class="mb-4">
+                                <input class="form-control" id="firmwareFileUploadId" type="file"
+                                    name="firmwareFileUploadId" required />
+                            </div>
+                            <div class="mb-4" id="firmwareUploadStatusWrapper">
+                                <div>Upload Status:</div>
+                                <div class="progress" style="height: 15px;">
+                                    <div id="firmwareUploadProgressBar" class="progress-bar" role="progressbar"
+                                        style="width: 0%;"></div>
+                                </div>
+                                <div id="firmwareUploadStatus"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary">Upgrade</button>
+                            <button class="btn btn-secondary" data-mdb-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- Firmware update Modal End -->
+
     </main>
 
     <script src="js/jquery.min.js"></script>
     <script src="js/mdb.min.js"></script>
+    <script src="js/spark_md5.min.js"></script>
     <script>
-
         function updateHostName() {
             $.ajax({
                 type: "GET",
@@ -425,13 +436,15 @@
                     async: true,
                     dataType: "json",
                     success: function (data) {
-                        if (data.hasOwnProperty('temperatureC')) {
-                            var tempC = data['temperatureC'];
-                            var tempF = tempC * 9 / 5 + 32;
-                            $('#temperatureC').html(tempC);
-                            $('#temperatureF').html(Math.round(tempF * 10) / 10);
+                        if (data != null) {
+                            if (data.hasOwnProperty('temperatureC')) {
+                                var tempC = data['temperatureC'];
+                                var tempF = tempC * 9 / 5 + 32;
+                                $('#temperatureC').html(tempC);
+                                $('#temperatureF').html(Math.round(tempF * 10) / 10);
+                            }
+                            $('#humidity').html(data['humidity']);
                         }
-                        $('#humidity').html(data['humidity']);
                     }
                 });
             }
@@ -473,97 +486,252 @@
             });
         }
 
-        var sensorUpdateIntervalID = setInterval(updateSensorValues, 10000); // root sensor 
+
+        function showConfirmModal(actionName, url) {
+            $('#confirmAction').text(actionName);
+            $('#confirmActionForm').attr('action', url);
+            $('#confirmActionStatus').hide();
+            $('#confirmActionModal').modal('show');
+        };
+
+        var sensorUpdateIntervalID;
         var informationUpdateRefreshInterval;
         var homekitUpdateRefreshInterval;
+        var firmwareFileUploadMd5;
 
-        // Wifi Password toggle
-        $('#wifitooglepassword').change(function () {
-            let input = $('#wifipassword');
-            if (input.attr('type') == 'password') {
-                input.attr('type', 'text');
-            } else {
-                input.attr('type', 'password');
-            }
-        });
-
-        // Login Password toggle
-        $('#webPasswordToggle').change(function () {
-            let input = $('#webPassword');
-            if (input.attr('type') == 'password') {
-                input.attr('type', 'text');
-            } else {
-                input.attr('type', 'password');
-            }
-        });
-
-        document.getElementById('wifiSettingsModal').addEventListener('show.mdb.modal', (e) => {
-            $.ajax({
-                type: "GET",
-                url: "/api/wifi/get",
-                dataType: "json",
-                success: function (data) {
-                    $('#ssid').val(data["ssid"]);
-                },
-                error: function () {
-                    $('#ssid').val('');
-                    console.warn('Failed to update');
+        $(document).ready(function () {
+            // Wifi Password toggle
+            $('#wifitooglepassword').change(function () {
+                let input = $('#wifipassword');
+                if (input.attr('type') == 'password') {
+                    input.attr('type', 'text');
+                } else {
+                    input.attr('type', 'password');
                 }
+            });
+
+            // Login Password toggle
+            $('#webPasswordToggle').change(function () {
+                let input = $('#webPassword');
+                if (input.attr('type') == 'password') {
+                    input.attr('type', 'text');
+                } else {
+                    input.attr('type', 'password');
+                }
+            });
+
+            document.getElementById('wifiSettingsModal').addEventListener('show.mdb.modal', (e) => {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/wifi/get",
+                    dataType: "json",
+                    success: function (data) {
+                        $('#ssid').val(data["ssid"]);
+                    },
+                    error: function () {
+                        $('#ssid').val('');
+                        console.warn('Failed to update');
+                    }
+                });
+            });
+
+            document.getElementById('websiteLoginModal').addEventListener('show.mdb.modal', (e) => {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/config/get",
+                    dataType: "json",
+                    success: function (data) {
+                        $('#webUserName').val(data["webusername"]);
+                    },
+                    error: function () {
+                        $('#webUserName').val('');
+                        console.warn('Failed to update');
+                    }
+                });
+            });
+
+            document.getElementById('otherSettingsModal').addEventListener('show.mdb.modal', (e) => {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/config/get",
+                    dataType: "json",
+                    success: function (data) {
+                        $('#hostName').val(data["hostname"]);
+                        $('#sensorsRefreshInterval').val(data["sensorsrefreshinterval"] / 1000);
+                        $('#showDisplayInF').prop('checked', data["showdisplayinf"]);
+                        $('#showDisplayInF').val(data["showdisplayinf"] ? "1" : "0");
+                    },
+                    error: function () {
+                        console.warn('Failed to update');
+                    }
+                });
+            });
+
+            document.getElementById('informationModal').addEventListener('show.mdb.modal', (e) => {
+                updateInformation();
+                informationUpdateRefreshInterval = setInterval(updateInformation, 10000);
+            });
+
+            document.getElementById('informationModal').addEventListener('hide.mdb.modal', (e) => {
+                clearInterval(informationUpdateRefreshInterval);
+            });
+
+            document.getElementById('homekitModal').addEventListener('show.mdb.modal', (e) => {
+                updateHomeKit();
+                homekitUpdateRefreshInterval = setInterval(updateHomeKit, 10000);
+            });
+
+            document.getElementById('homekitModal').addEventListener('hide.mdb.modal', (e) => {
+                clearInterval(homekitUpdateRefreshInterval);
+            });
+
+            document.getElementById('firmwareUploadForm').addEventListener('show.mdb.modal', (e) => {
+                $("#firmwareUploadStatusWrapper").hide();
+            });
+
+            document.getElementById('restartDeviceButtonId').addEventListener('click', function () {
+                showConfirmModal('restart', '/restart.handler');
+            });
+
+            document.getElementById('factoryResetButtonId').addEventListener('click', function () {
+                showConfirmModal('factory reset', '/factory.reset.handler');
+            });
+
+            document.getElementById('forgetHomeKitPairingButtonId').addEventListener('click', function () {
+                showConfirmModal('forget homekit pairing', '/homekit.reset.handler');
+            });
+
+            $("#confirmActionForm").on('submit', function (e) {
+                e.preventDefault();
+                var form = $('#confirmActionForm');
+
+                $.ajax({
+                    type: form.attr('method'),
+                    url: form.attr('action'),
+                    data: new FormData(this),
+                    contentType: false,
+                    cache: false,
+                    processData: false,
+                    beforeSend: function () {
+                        $('#confirmActionStatus').hide();
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        if (jqXHR.status == 500) {
+                            $('#confirmActionStatus').text(jqXHR.responseText);
+                        } else {
+                            $('#confirmActionStatus').text('Operation failed');
+                        }
+                        $('#confirmActionStatus').show();
+                    },
+                    success: function (resp) {
+                        $('#confirmActionModal').modal('hide');
+                        $('#redirectingModal').modal('show');
+                        setTimeout(function () {
+                            $('#confirmActionModalRedirecting').trigger('click');
+                        }, 5000);
+                    }
+                });
+            });
+
+            // File upload via Ajax
+            $("#firmwareUploadForm").on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    xhr: function () {
+                        var xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener("progress", function (evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = ((evt.loaded / evt.total) * 100).toFixed();
+                                $("#firmwareUploadProgressBar").width(percentComplete + '%');
+                                $("#firmwareUploadProgressBar").html('<span class="text-center">' + percentComplete + '%</span>');
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    type: 'POST',
+                    url: '/firmware.update.handler',
+                    data: new FormData(this),
+                    contentType: false,
+                    cache: false,
+                    processData: false,
+                    headers: { 'md5': firmwareFileUploadMd5 },
+                    beforeSend: function () {
+                        $("#firmwareUploadProgressBar").width('0%');
+                        $('#firmwareUploadStatus').html('');
+                        $("#firmwareUploadStatusWrapper").show();
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        if (jqXHR.status == 500) {
+                            $('#firmwareUploadStatus').html('<div class="text-danger" id="firmwareUpgradeError"></div>');
+                            $('#firmwareUpgradeError').text(jqXHR.responseText);
+                        } else {
+                            $('#firmwareUploadStatus').html('<div class="text-danger">File upload failed, please try again.</div>');
+                        }
+                    },
+                    success: function (resp) {
+                        $('#reloadLoadingMessageId').html('Update successful. Loading...');
+                        $('#firmwareUpdateModal').modal('hide');
+                        $('#redirectingModal').modal('show');
+                        setTimeout(function () {
+                            $('#confirmActionModalRedirecting').trigger('click');
+                        }, 7000);
+                    }
+                });
+            });
+
+            // md5
+
+            document.getElementById('firmwareFileUploadId').addEventListener('change', function () {
+
+                if (this.files[0].size > 1024 * 1024) {
+                    $('#firmwareUploadStatus').html('<div class="text-danger">File is too big.</div>');
+                    $("#firmwareUploadStatusWrapper").show();
+                    this.value = "";
+                    return;
+                } else {
+                    $('#firmwareUploadStatus').html('');
+                    $("#firmwareUploadStatusWrapper").hide();
+                }
+
+                var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
+                    file = this.files[0],
+                    chunkSize = 1024 * 1024,
+                    chunks = Math.ceil(file.size / chunkSize),
+                    currentChunk = 0,
+                    spark = new SparkMD5.ArrayBuffer(),
+                    fileReader = new FileReader();
+
+                fileReader.onload = function (e) {
+                    spark.append(e.target.result);
+                    currentChunk++;
+
+                    if (currentChunk < chunks) {
+                        loadNext();
+                    } else {
+                        console.info('computed hash', spark.end());  // Compute hash
+                        firmwareFileUploadMd5 = spark.end();
+                    }
+                };
+
+                fileReader.onerror = function () {
+                    console.warn('oops, something went wrong.');
+                };
+
+                function loadNext() {
+                    var start = currentChunk * chunkSize,
+                        end = ((start + chunkSize) >= file.size) ? file.size : start + chunkSize;
+
+                    fileReader.readAsArrayBuffer(blobSlice.call(file, start, end));
+                }
+                loadNext();
             });
         });
 
-        document.getElementById('websiteLoginModal').addEventListener('show.mdb.modal', (e) => {
-            $.ajax({
-                type: "GET",
-                url: "/api/config/get",
-                dataType: "json",
-                success: function (data) {
-                    $('#webUserName').val(data["webusername"]);
-                },
-                error: function () {
-                    $('#webUserName').val('');
-                    console.warn('Failed to update');
-                }
-            });
+        $(document).ready(function () {
+            updateSensorValues();
+            updateHostName();
+            sensorUpdateIntervalID = setInterval(updateSensorValues, 10000);
         });
-
-        document.getElementById('otherSettingsModal').addEventListener('show.mdb.modal', (e) => {
-            $.ajax({
-                type: "GET",
-                url: "/api/config/get",
-                dataType: "json",
-                success: function (data) {
-                    $('#hostName').val(data["hostname"]);
-                    $('#sensorsRefreshInterval').val(data["sensorsrefreshinterval"] / 1000);
-                    $('#showDisplayInF').prop('checked', data["showdisplayinf"]);
-                    $('#showDisplayInF').val(data["showdisplayinf"] ? "1" : "0");
-                },
-                error: function () {
-                    console.warn('Failed to update');
-                }
-            });
-        });
-
-        document.getElementById('informationModal').addEventListener('show.mdb.modal', (e) => {
-            updateInformation();
-            informationUpdateRefreshInterval = setInterval(updateInformation, 10000);
-        });
-
-        document.getElementById('informationModal').addEventListener('hide.mdb.modal', (e) => {
-            clearInterval(informationUpdateRefreshInterval);
-        });
-
-        document.getElementById('homekitModal').addEventListener('show.mdb.modal', (e) => {
-            updateHomeKit();
-            homekitUpdateRefreshInterval = setInterval(updateHomeKit, 10000);
-        });
-
-        document.getElementById('homekitModal').addEventListener('hide.mdb.modal', (e) => {
-            clearInterval(homekitUpdateRefreshInterval);
-        });
-
-        updateSensorValues();
-        updateHostName();
     </script>
 </body>
 

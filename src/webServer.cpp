@@ -3,17 +3,39 @@
 #include <hash.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
-
 #include "WiFiManager.h"
 #include "configManager.h"
 #include "operations.h"
 #include "hardware.h"
 #include "homeKit2.h"
 #include "logging.h"
+#include "web.h"
+
+typedef struct
+{
+	const char *Path;
+	const unsigned char *Data;
+	const size_t Size;
+	const bool Zipped;
+} StaticFilesMap;
+
+const static StaticFilesMap staticFilesMap[] PROGMEM = {
+	{"/login.html", login_html_gz, login_html_gz_len, true},
+	{"/index.html", index_html_gz, index_html_gz_len, true},
+	{"/media/logo.png", logo_png, logo_png_len, false},
+	{"/media/favicon.png", favicon_png, favicon_png_len, false},
+	{"/media/logout.png", logout_png, logout_png_len, false},
+	{"/media/settings.png", settings_png, settings_png_len, false},
+	{"/js/jquery.min.js", jquery_min_js_gz, jquery_min_js_gz_len, true},
+	{"/js/spark_md5.min.js", spark_md5_min_js_gz, spark_md5_min_js_gz_len, true},
+	{"/js/mdb.min.js", mdb_min_js_gz, mdb_min_js_gz_len, true},
+	{"/css/mdb.min.css", mdb_min_css_gz, mdb_min_css_gz_len, true},
+};
 
 WebServer WebServer::instance;
 
 static const char JsonMediaType[] PROGMEM = "application/json";
+static const char TextPlainMediaType[] PROGMEM = "text/plain";
 
 void WebServer::begin()
 {
@@ -36,15 +58,21 @@ bool WebServer::manageSecurity(AsyncWebServerRequest *request)
 
 void WebServer::serverRouting()
 {
+	// form calls
 	httpServer.on(PSTR("/login.handler"), HTTP_POST, handleLogin);
-	httpServer.on(PSTR("/logout.handler"), HTTP_GET, handleLogout);
+	httpServer.on(PSTR("/logout.handler"), HTTP_POST, handleLogout);
 	httpServer.on(PSTR("/wifiupdate.handler"), HTTP_POST, wifiUpdate);
+
+	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
+	httpServer.on(PSTR("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
+
+	// ajax form call
 	httpServer.on(PSTR("/factory.reset.handler"), HTTP_POST, factoryReset);
 	httpServer.on(PSTR("/homekit.reset.handler"), HTTP_POST, homekitReset);
+	httpServer.on(PSTR("/firmware.update.handler"), HTTP_POST, firmwareUpdateComplete, firmwareUpdateUpload);
 	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
-	httpServer.on(PSTR("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
-	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
 
+	// json ajax calls
 	httpServer.on(PSTR("/api/sensor/get"), HTTP_GET, sensorGet);
 	httpServer.on(PSTR("/api/wifi/get"), HTTP_GET, wifiGet);
 	httpServer.on(PSTR("/api/information/get"), HTTP_GET, informationGet);
@@ -92,9 +120,7 @@ void WebServer::wifiUpdate(AsyncWebServerRequest *request)
 	}
 	else
 	{
-		LOG_ERROR(F("Required parameters not provided"));
-		request->send(400);
-		return;
+		handleError(request, F("Required parameters not provided"), 400);
 	}
 }
 
@@ -116,8 +142,9 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 
 	DynamicJsonDocument arr(1024);
 
-	addKeyValueObject(arr, F("AP SSID"), WifiManager::SSID());
-	addKeyValueObject(arr, F("AP Signal Strength"), WifiManager::RSSI());
+	addKeyValueObject(arr, F("AP SSID"), WiFi.SSID());
+	addKeyValueObject(arr, F("AP Signal Strength"), WiFi.RSSI());
+	addKeyValueObject(arr, F("Mac Address"), WiFi.softAPmacAddress());
 
 	addKeyValueObject(arr, F("Reset Reason"), ESP.getResetReason());
 	addKeyValueObject(arr, F("CPU Frequency (MHz)"), ESP.getCpuFreqMHz());
@@ -211,11 +238,11 @@ bool WebServer::isAuthenticated(AsyncWebServerRequest *request)
 
 		if (cookie.indexOf(F("ESPSESSIONID=") + token) != -1)
 		{
-			LOG_TRACE("Authentication Successful");
+			LOG_TRACE(F("Authentication Successful"));
 			return true;
 		}
 	}
-	LOG_TRACE("Authentication Failed");
+	LOG_TRACE(F("Authentication Failed"));
 	return false;
 }
 
@@ -265,8 +292,7 @@ void WebServer::handleLogin(AsyncWebServerRequest *request)
 	}
 	else
 	{
-		LOG_ERROR(F("Login Parameter not provided"));
-		request->send(400);
+		handleError(request, F("Login Parameter not provided"), 400);
 	}
 }
 
@@ -357,7 +383,7 @@ void WebServer::restartDevice(AsyncWebServerRequest *request)
 		return;
 	}
 
-	redirectToRoot(request);
+	request->send(200);
 	operations::instance.reboot();
 }
 
@@ -370,23 +396,35 @@ void WebServer::factoryReset(AsyncWebServerRequest *request)
 		return;
 	}
 
-	redirectToRoot(request);
+	request->send(200);
 	operations::instance.factoryReset();
 }
 
-void WebServer::homekitReset(AsyncWebServerRequest *request)
+void WebServer::firmwareUpdateComplete(AsyncWebServerRequest *request)
 {
-	LOG_WARNING(F("homekitReset"));
+	LOG_INFO(F("firmwareUpdateComplete"));
 
 	if (!manageSecurity(request))
 	{
 		return;
 	}
 
+	request->send(200);
+	operations::instance.reboot();
+}
+
+void WebServer::homekitReset(AsyncWebServerRequest *request)
+{
+	LOG_INFO(F("homekitReset"));
+
+	if (!manageSecurity(request))
+	{
+		return;
+	}
 
 	config::instance.data.homeKitPairData.resize(0);
 	config::instance.save();
-	redirectToRoot(request);
+	request->send(200);
 	operations::instance.reboot();
 }
 
@@ -401,7 +439,7 @@ String WebServer::getContentType(const String &filename)
 	else if (filename.endsWith(F(".js")))
 		return F("application/javascript");
 	else if (filename.endsWith(F(".json")))
-		return F("application/json");
+		return JsonMediaType;
 	else if (filename.endsWith(F(".png")))
 		return F("image/png");
 	else if (filename.endsWith(F(".gif")))
@@ -420,7 +458,7 @@ String WebServer::getContentType(const String &filename)
 		return F("application/x-zip");
 	else if (filename.endsWith(F(".gz")))
 		return F("application/x-gzip");
-	return F("text/plain");
+	return TextPlainMediaType;
 }
 
 void WebServer::handleFileRead(AsyncWebServerRequest *request)
@@ -428,54 +466,44 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 	auto path = request->url();
 	LOG_DEBUG(F("handleFileRead: ") << path);
 
+	if (path.endsWith(F("/")) || path.isEmpty())
+	{
+		LOG_DEBUG(F("Redirecting to index page"));
+		path = F("/index.html");
+	}
+
 	const bool worksWithoutAuth = path.startsWith(F("/media/")) ||
 								  path.startsWith(F("/js/")) ||
 								  path.startsWith(F("/css/")) ||
-								  path.startsWith(F("/font/"));
+								  path.startsWith(F("/font/")) ||
+								  path.equalsIgnoreCase(F("/login.html"));
 
 	if (!worksWithoutAuth && !isAuthenticated(request))
 	{
 		LOG_DEBUG(F("Redirecting to login page"));
 		path = F("/login.html");
 	}
-	else
+
+	const auto contentType = getContentType(path);
+
+	for (auto &&entry : staticFilesMap)
 	{
-		if (path.endsWith("/"))
+		if (path.equalsIgnoreCase(entry.Path))
 		{
-			path += F("/index.html"); // If a folder is requested, send the index file
-		}
-	}
-
-	path = F("/web") + path;
-
-	const auto contentType = getContentType(path); // Get the MIME type
-	const auto pathWithGz = path + F(".gz");
-	if (LittleFS.exists(pathWithGz) || LittleFS.exists(path))
-	{ // If the file exists, either as a compressed archive, or normal
-		const bool gzipped = LittleFS.exists(pathWithGz);
-		if (gzipped)
-		{					  // If there's a compressed version available
-			path += F(".gz"); // Use the compressed version
-		}
-
-		auto response = request->beginResponse(LittleFS, path, contentType);
-		if (worksWithoutAuth)
-		{
+			auto response = request->beginResponse_P(200, contentType, entry.Data, entry.Size);
 			response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
+			if (entry.Zipped)
+			{
+				response->addHeader(F("Content-Encoding"), F("gzip"));
+			}
+			request->send(response);
+			LOG_DEBUG(F("Served from Memory file path:") << path << F(" mimeType:") << contentType
+														 << F(" size:") << entry.Size);
+			return;
 		}
-
-		if (gzipped)
-		{
-			response->addHeader(F("Content-Encoding"), F("gzip"));
-		}
-		request->send(response);
-
-		LOG_DEBUG(F("Served file path:") << path);
 	}
-	else
-	{
-		handleNotFound(request);
-	}
+
+	handleNotFound(request);
 }
 
 /** Redirect to captive portal if we got a request for another domain.
@@ -485,7 +513,7 @@ bool WebServer::isCaptivePortalRequest(AsyncWebServerRequest *request)
 	if (!isIp(request->host()))
 	{
 		LOG_INFO(F("Request redirected to captive portal"));
-		AsyncWebServerResponse *response = request->beginResponse(302, F("text/plain"));
+		AsyncWebServerResponse *response = request->beginResponse(302, TextPlainMediaType);
 		response->addHeader(F("Location"), String(F("http://")) + toStringIp(request->client()->localIP()));
 		request->send(response);
 		return true;
@@ -512,16 +540,10 @@ void WebServer::handleNotFound(AsyncWebServerRequest *request)
 
 	for (unsigned int i = 0; i < request->args(); i++)
 	{
-		message += " " + request->argName(i) + ": " + request->arg(i) + "\n";
+		message += F(" ") + request->argName(i) + F(": ") + request->arg(i) + "\n";
 	}
 
-	LOG_INFO(message);
-
-	AsyncWebServerResponse *response = request->beginResponse(404, F("text/plain"), message);
-	response->addHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
-	response->addHeader(F("(Pragma"), F("no-cache"));
-	response->addHeader(F("Expires"), F("-1"));
-	request->send(response);
+	handleError(request, message, 404);
 }
 
 // is this an IP?
@@ -548,4 +570,87 @@ void WebServer::redirectToRoot(AsyncWebServerRequest *request)
 	AsyncWebServerResponse *response = request->beginResponse(301); // Sends 301 redirect
 	response->addHeader(F("Location"), F("/"));
 	request->send(response);
+}
+
+void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
+									 const String &filename,
+									 size_t index,
+									 uint8_t *data,
+									 size_t len,
+									 bool final)
+{
+	LOG_DEBUG(F("firmwareUpdateUpload"));
+
+	const auto MD5Header = F("md5");
+
+	if (!manageSecurity(request))
+	{
+		return;
+	}
+
+	String error;
+	if (!index)
+	{
+		String md5;
+
+		if (request->hasHeader(MD5Header))
+		{
+			md5 = request->getHeader(MD5Header)->value();
+		}
+
+		LOG_DEBUG(F("Expected MD5:") << md5);
+
+		if (md5.length() != 32)
+		{
+			handleError(request, F("MD5 parameter invalid. Check file exists."), 500);
+			return;
+		}
+
+		if (operations::instance.startUpdate(request->contentLength(), md5, error))
+		{
+			// success, let's make sure we end the update if the client hangs up
+			request->onDisconnect(handleEarlyDisconnect);
+		}
+		else
+		{
+			handleError(request, error, 500);
+			return;
+		}
+	}
+
+	if (operations::instance.isUpdateInProgress())
+	{
+		if (!operations::instance.writeUpdate(data, len, error))
+		{
+			handleError(request, error, 500);
+		}
+
+		if (final)
+		{
+			if (!operations::instance.endUpdate(error))
+			{
+				handleError(request, error, 500);
+			}
+		}
+	}
+}
+
+void WebServer::handleError(AsyncWebServerRequest *request, const String &message, int code)
+{
+	if (!message.isEmpty())
+	{
+		LOG_INFO(message);
+	}
+	AsyncWebServerResponse *response = request->beginResponse(code, TextPlainMediaType, message);
+	response->addHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
+	response->addHeader(F("(Pragma"), F("no-cache"));
+	response->addHeader(F("Expires"), F("-1"));
+	request->send(response);
+}
+
+void WebServer::handleEarlyDisconnect()
+{
+	LOG_ERROR(F("Update process aborted"));
+	String error;
+	operations::instance.endUpdate(error);
 }

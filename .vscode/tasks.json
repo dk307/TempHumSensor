@@ -1,0 +1,41 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "gulp",
+			"task": "default",
+			"problemMatcher": [],
+			"label": "gulp: default"
+		},
+		{
+			"type": "gulp",
+			"task": "css",
+			"problemMatcher": [],
+			"label": "gulp: css"
+		},
+		{
+			"type": "gulp",
+			"task": "html",
+			"problemMatcher": [],
+			"label": "gulp: html"
+		},
+		{
+			"type": "gulp",
+			"task": "images",
+			"problemMatcher": [],
+			"label": "gulp: images"
+		},
+		{
+			"type": "gulp",
+			"task": "js",
+			"problemMatcher": [],
+			"label": "gulp: js"
+		},
+		{
+			"type": "gulp",
+			"task": "webserver",
+			"problemMatcher": [],
+			"label": "gulp: webserver"
+		}
+	]
+}

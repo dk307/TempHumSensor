@@ -65,18 +65,18 @@ int8_t WifiManager::waitForConnectResult(unsigned long timeoutLength)
     return -1; // -1 indicates timeout
 }
 
-void WifiManager::disconnect()
+void WifiManager::disconnect(bool disconnectWifi)
 {
-    WiFi.disconnect();
+    WiFi.disconnect(disconnectWifi);
 }
 
 // function to forget current WiFi details and start a captive portal
 void WifiManager::forget()
 {
-    disconnect();
+    disconnect(false);
     startCaptivePortal();
-
-    LOG_INFO(PSTR("Requested to forget WiFi. Started Captive portal."));
+  
+    LOG_INFO(F("Requested to forget WiFi. Started Captive portal."));
 }
 
 // function to request a connection to new WiFi credentials
@@ -183,31 +183,6 @@ IPAddress WifiManager::LocalIP()
 String WifiManager::SSID()
 {
     return WiFi.SSID();
-}
-
-int8_t WifiManager::RSSI()
-{
-    return WiFi.RSSI();
-}
-
-int8_t WifiManager::RssiAsQuality()
-{
-    const int8_t rssi = WiFi.RSSI();
-    int quality = 0;
-
-    if (rssi <= -100)
-    {
-        quality = 0;
-    }
-    else if (rssi >= -50)
-    {
-        quality = 100;
-    }
-    else
-    {
-        quality = 2 * (rssi + 100);
-    }
-    return quality;
 }
 
 // captive portal loop
