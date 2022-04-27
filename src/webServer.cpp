@@ -581,7 +581,7 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 {
 	LOG_DEBUG(F("firmwareUpdateUpload"));
 
-	const auto MD5Parameter = F("firmwareFileUploadMd5Id");
+	const auto MD5Header = F("md5");
 
 	if (!manageSecurity(request))
 	{
@@ -593,10 +593,12 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 	{
 		String md5;
 
-		if (request->hasParam(MD5Parameter, true))
+		if (request->hasHeader(MD5Header))
 		{
-			md5 = request->getParam(MD5Parameter, true)->value();
+			md5 = request->getHeader(MD5Header)->value();
 		}
+
+		LOG_DEBUG(F("Expected MD5:") << md5);
 
 		if (md5.length() != 32)
 		{
@@ -616,16 +618,19 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 		}
 	}
 
-	if (!operations::instance.writeUpdate(data, len, error))
-	{
-		handleError(request, error, 500);
-	}
-
-	if (final)
+	if (operations::instance.isUpdateInProgress())
 	{
 		if (!operations::instance.writeUpdate(data, len, error))
 		{
 			handleError(request, error, 500);
+		}
+
+		if (final)
+		{
+			if (!operations::instance.endUpdate(error))
+			{
+				handleError(request, error, 500);
+			}
 		}
 	}
 }

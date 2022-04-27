@@ -81,9 +81,9 @@ bool operations::startUpdate(size_t length, const String &md5, String &error)
 	LOG_INFO(F("Free sketch space:") << ESP.getFreeSketchSpace());
 
 	const uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-	if (Update.setMD5(md5.c_str()))
+	if (!Update.setMD5(md5.c_str()))
 	{
-		LOG_ERROR(F("Md5 Invalid") << error);
+		LOG_ERROR(F("Md5 Invalid: ") << error);
 		return false;
 	}
 
@@ -134,6 +134,11 @@ bool operations::endUpdate(String &error)
 		LOG_ERROR(F("Update end failed with ") << error);
 		return false;
 	}
+}
+
+bool operations::isUpdateInProgress()
+{
+	return Update.isRunning();
 }
 
 void operations::getUpdateError(String &error)
