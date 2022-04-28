@@ -20,8 +20,6 @@ typedef struct
 	const size_t Size;
 	const bool Zipped;
 
-	
-
 } StaticFilesMap;
 
 static const char LoginUrl[] PROGMEM = "/login.html";
@@ -40,8 +38,6 @@ const static StaticFilesMap staticFilesMap[] = {
 	{IndexUrl, index_html_gz, index_html_gz_len, true},
 	{LogoUrl, logo_png, logo_png_len, false},
 	{FaviconUrl, favicon_png, favicon_png_len, false},
-	{LogoutUrl, logout_png, logout_png_len, false},
-	{SettingsUrl, settings_png, settings_png_len, false},
 	{JqueryJsUrl, jquery_min_js_gz, jquery_min_js_gz_len, true},
 	{SparkJsUrl, spark_md5_min_js_gz, spark_md5_min_js_gz_len, true},
 	{MdbJsUrl, mdb_min_js_gz, mdb_min_js_gz_len, true},
@@ -158,7 +154,6 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 
 	const auto maxFreeHeapSize = ESP.getMaxFreeBlockSize() / 1024;
 	const auto freeHeap = ESP.getFreeHeap() / 1024;
-
 
 	auto response = new AsyncJsonResponse(true, 1024);
 	auto arr = response->getRoot();
@@ -350,8 +345,7 @@ void WebServer::webLoginUpdate(AsyncWebServerRequest *request)
 	}
 	else
 	{
-		LOG_WARNING(F("Correct Parameters not provided"));
-		request->send(400);
+		handleError(request, F("Correct Parameters not provided"), 400);
 	}
 
 	config::instance.save();

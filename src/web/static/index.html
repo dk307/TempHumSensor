@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <!--
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
-
+-->
     <link rel="stylesheet" href="css/mdb.min.css" />
     <link rel="shortcut icon" href="media/favicon.png" type="image/x-icon">
     <link rel="icon" href="media/favicon.png" type="image/x-icon">
@@ -27,11 +27,12 @@
 
             <!-- Right elements -->
             <div class="d-flex align-items-center">
-                <button type="button" class="btn btn-floating" data-mdb-toggle="modal" data-mdb-target="#settingsModal">
-                    <img src="media/settings.png" height="35" alt="Settings" loading="lazy" />
+                <button type="button" class="btn btn-info me-2" data-mdb-toggle="modal"
+                    data-mdb-target="#settingsModal">
+                    Settings
                 </button>
-                <button type="button" class="btn btn-floating" data-mdb-toggle="modal" data-mdb-target="#logoutModal">
-                    <img src="media/logout.png" height="35" alt="Logout" loading="lazy" />
+                <button type="button" class="btn btn-info me-2" data-mdb-toggle="modal" data-mdb-target="#logoutModal">
+                    Logout
                 </button>
             </div>
             <!-- Right elements -->
@@ -103,6 +104,12 @@
                             <div class="p-2">
                                 <button type="button" class="btn btn-info btn-block" data-mdb-dismiss="modal"
                                     id="restartDeviceButtonId">Restart</button>
+                            </div>
+
+                            <div class="p-2">
+                                <a role="button" class="btn btn-info btn-block" data-mdb-dismiss="modal"
+                                    id="backupButtonId">Backup</a>
+                                <a href="/api/config/get" id="backupButtonAId" download="backup.json" hidden>Backup</a>
                             </div>
 
                             <div class="p-2">
@@ -369,7 +376,7 @@
         </div>
         <!-- Information Modal End -->
 
-        <!-- Firmware Update Modal Start-->
+        <!-- File Update Modal Start-->
         <form class="needs-validation" id="firmwareUploadForm" method="post" enctype="multipart/form-data">
             <div class="modal fade" id="firmwareUpdateModal" tabindex="-1">
                 <div class="modal-dialog">
@@ -404,7 +411,7 @@
                 </div>
             </div>
         </form>
-        <!-- Firmware update Modal End -->
+        <!-- File update Modal End -->
 
     </main>
 
@@ -595,6 +602,11 @@
 
             document.getElementById('factoryResetButtonId').addEventListener('click', function () {
                 showConfirmModal('factory reset', '/factory.reset.handler');
+            });
+
+
+            document.getElementById('backupButtonId').addEventListener('click', function () {
+                $('#backupButtonAId')[0].click();
             });
 
             document.getElementById('forgetHomeKitPairingButtonId').addEventListener('click', function () {
