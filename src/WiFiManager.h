@@ -23,7 +23,6 @@ public:
     static IPAddress LocalIP();
     static String SSID();
     void disconnect(bool disconnectWifi);
-
     static WifiManager instance;
 
 private:

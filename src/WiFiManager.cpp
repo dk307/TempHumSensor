@@ -75,7 +75,7 @@ void WifiManager::forget()
 {
     disconnect(false);
     startCaptivePortal();
-  
+
     LOG_INFO(F("Requested to forget WiFi. Started Captive portal."));
 }
 
