@@ -1,10 +1,12 @@
 #pragma once
 #include "changeCallBack.h"
 
+#include <ArduinoJson.h>
+
 class DataStorage
 {
 public:
-    void read(uint32_t srcAddress, uint32_t *desAddress,uint32_t size);
+    void read(uint32_t srcAddress, uint32_t *desAddress, uint32_t size);
     void write(uint32_t desAddress, uint32_t *srcAddress, uint32_t size);
     void save();
 };
@@ -14,7 +16,7 @@ struct configData
     String hostName;
     String webUserName;
     String webPassword;
-    std::vector<byte> homeKitPairData;
+    std::vector<uint8_t> homeKitPairData;
     uint64_t sensorsRefreshInterval;
     bool showDisplayInF;
 
@@ -25,7 +27,7 @@ struct configData
 
     void setDefaults()
     {
-        hostName = String();
+        hostName.clear();
         webUserName = F("admin");
         webPassword = F("admin");
         homeKitPairData.resize(0);
@@ -48,9 +50,18 @@ public:
 
     String getAllConfigAsJson();
 
+    // does not restore to memory, needs reboot
+    bool restoreAllConfigAsJson(const std::vector<uint8_t> &json, const String &md5);
+
 private:
     config() {}
-    static String readFromFile(const String &filePath);
-    static bool writeToFile(const String &fileName, const String &contents);
-    bool requestSave = false;
+    static String readFile(const String &fileName);
+
+    template <class... T>
+    static String md5Hash(T&&... data);
+
+    template <class... T>
+    static size_t writeToFile(const String &fileName, T&&... contents);
+
+    bool requestSave{false};
 };

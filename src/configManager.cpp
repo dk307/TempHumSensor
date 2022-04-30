@@ -1,8 +1,8 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
+
 #include <LittleFS.h>
-#include <Hash.h>
 #include <base64.h> // from esphap
+#include <MD5Builder.h>
 #include "logging.h"
 
 #include "configManager.h"
@@ -18,6 +18,30 @@ static const char ShowDisplayInFId[] PROGMEM = "showdisplayinf";
 
 config config::instance;
 
+template <class... T>
+String config::md5Hash(T&&... data)
+{
+    MD5Builder hashBuilder;
+    hashBuilder.begin();
+    hashBuilder.add(data...);
+    hashBuilder.calculate();
+    return hashBuilder.toString();
+}
+
+template <class... T>
+size_t config::writeToFile(const String &fileName, T&&... contents)
+{
+    File file = LittleFS.open(fileName, "w");
+    if (!file)
+    {
+        return 0;
+    }
+
+    const auto bytesWritten = file.write(contents...);
+    file.close();
+    return bytesWritten;
+}
+
 void config::erase()
 {
     LittleFS.remove(FPSTR(ConfigChecksumFilePath));
@@ -26,26 +50,17 @@ void config::erase()
 
 bool config::begin()
 {
-    const auto json = readFromFile(ConfigFilePath);
-    if (json.isEmpty())
+    const auto configData = readFile(ConfigFilePath);
+
+    if (configData.isEmpty())
     {
         LOG_INFO(F("No stored config found"));
         reset();
         return false;
     }
 
-    const auto readChecksum = readFromFile(ConfigChecksumFilePath);
-    const auto checksum = sha1(json);
-
-    if (checksum != readChecksum)
-    {
-        LOG_ERROR(F("Config data checksum mismatch"));
-        reset();
-        return false;
-    }
-
-    DynamicJsonDocument jsonBuffer(2048);
-    const DeserializationError error = deserializeJson(jsonBuffer, json);
+    DynamicJsonDocument jsonDocument(2048);
+    DeserializationError error = deserializeJson(jsonDocument, configData);
 
     // Test if parsing succeeds.
     if (error)
@@ -55,13 +70,24 @@ bool config::begin()
         return false;
     }
 
-    data.hostName = jsonBuffer[FPSTR(HostNameId)].as<String>();
-    data.webUserName = jsonBuffer[FPSTR(WebUserNameId)].as<String>();
-    data.webPassword = jsonBuffer[FPSTR(WebPasswordId)].as<String>();
-    data.sensorsRefreshInterval = jsonBuffer[FPSTR(SensorsRefreshIntervalId)].as<uint64_t>();
-    data.showDisplayInF = jsonBuffer[FPSTR(ShowDisplayInFId)].as<bool>();
+    // read checksum from file
+    const auto readChecksum = readFile(ConfigChecksumFilePath);
+    const auto checksum = md5Hash(configData);
 
-    const auto encodedHomeKitData = jsonBuffer[FPSTR(HomeKitPairDataId)].as<String>();
+    if (!checksum.equalsIgnoreCase(readChecksum))
+    {
+        LOG_ERROR(F("Config data checksum mismatch"));
+        reset();
+        return false;
+    }
+
+    data.hostName = jsonDocument[FPSTR(HostNameId)].as<String>();
+    data.webUserName = jsonDocument[FPSTR(WebUserNameId)].as<String>();
+    data.webPassword = jsonDocument[FPSTR(WebPasswordId)].as<String>();
+    data.sensorsRefreshInterval = jsonDocument[FPSTR(SensorsRefreshIntervalId)].as<uint64_t>();
+    data.showDisplayInF = jsonDocument[FPSTR(ShowDisplayInFId)].as<bool>();
+
+    const auto encodedHomeKitData = jsonDocument[FPSTR(HomeKitPairDataId)].as<String>();
 
     const auto size = base64_decoded_size(reinterpret_cast<const unsigned char *>(encodedHomeKitData.c_str()),
                                           encodedHomeKitData.length());
@@ -69,6 +95,11 @@ bool config::begin()
 
     base64_decode_(reinterpret_cast<const unsigned char *>(encodedHomeKitData.c_str()),
                    encodedHomeKitData.length(), data.homeKitPairData.data());
+
+    data.homeKitPairData.shrink_to_fit();
+
+    LOG_DEBUG(F("Loaded Config from file"));
+
     return true;
 }
 
@@ -78,69 +109,33 @@ void config::reset()
     requestSave = true;
 }
 
-String config::readFromFile(const String &filePath)
-{
-    String result;
-
-    File file = LittleFS.open(filePath, "r");
-    if (!file)
-    {
-        return result;
-    }
-
-    while (file.available())
-    {
-        result += (char)file.read();
-    }
-
-    file.close();
-    return result;
-}
-
-bool config::writeToFile(const String &fileName, const String &contents)
-{
-    File file = LittleFS.open(fileName, "w");
-    if (!file)
-    {
-        return false;
-    }
-
-    const int bytesWritten = file.print(contents);
-    if (bytesWritten == 0)
-    {
-        return false;
-    }
-
-    file.close();
-    return true;
-}
-
 void config::save()
 {
     LOG_INFO(F("Saving configuration"));
-    DynamicJsonDocument jsonBuffer(2048);
-
-    jsonBuffer[FPSTR(HostNameId)] = data.hostName.c_str();
-    jsonBuffer[FPSTR(WebUserNameId)] = data.webUserName.c_str();
-    jsonBuffer[FPSTR(WebPasswordId)] = data.webPassword.c_str();
-
-    const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
-    const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
-    base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
-
-    jsonBuffer[FPSTR(HomeKitPairDataId)] = encodedData.get();
-    jsonBuffer[FPSTR(SensorsRefreshIntervalId)] = data.sensorsRefreshInterval;
-    jsonBuffer[FPSTR(ShowDisplayInFId)] = data.showDisplayInF;
 
     String json;
-    serializeJson(jsonBuffer, json);
-
-    LOG_TRACE(F("Saving: ") << json);
-
-    if (writeToFile(ConfigFilePath, json))
     {
-        const auto checksum = sha1(json);
-        if (!writeToFile(ConfigChecksumFilePath, checksum))
+        DynamicJsonDocument jsonDocument(2048);
+
+        jsonDocument[FPSTR(HostNameId)] = data.hostName.c_str();
+        jsonDocument[FPSTR(WebUserNameId)] = data.webUserName.c_str();
+        jsonDocument[FPSTR(WebPasswordId)] = data.webPassword.c_str();
+
+        const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
+        const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
+        base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
+
+        jsonDocument[FPSTR(HomeKitPairDataId)] = encodedData.get();
+        jsonDocument[FPSTR(SensorsRefreshIntervalId)] = data.sensorsRefreshInterval;
+        jsonDocument[FPSTR(ShowDisplayInFId)] = data.showDisplayInF;
+
+        serializeJson(jsonDocument, json);
+    }
+
+    if (writeToFile(ConfigFilePath, json.c_str(), json.length()) == json.length())
+    {
+        const auto checksum = md5Hash(json);
+        if (writeToFile(ConfigChecksumFilePath, checksum.c_str(), checksum.length()) != checksum.length())
         {
             LOG_ERROR(F("Failed to write config checksum file"));
         }
@@ -163,8 +158,43 @@ void config::loop()
     }
 }
 
+String config::readFile(const String &fileName)
+{
+    File file = LittleFS.open(fileName, "r");
+    if (!file)
+    {
+        return String();
+    }
+
+    const auto json = file.readString();
+    file.close();
+    return json;
+}
+
 String config::getAllConfigAsJson()
 {
-    loop();
-    return readFromFile(ConfigFilePath);
+    loop(); // save if needed
+    return readFile(ConfigFilePath);
+}
+
+bool config::restoreAllConfigAsJson(const std::vector<uint8_t> &json, const String &hashMd5)
+{
+    const auto expectedMd5 = md5Hash(json.data(), json.size());
+
+    if (!expectedMd5.equalsIgnoreCase(hashMd5))
+    {
+        LOG_ERROR(F("Uploaded Md5 for config does not match. File md5:") << expectedMd5);
+        return false;
+    }
+
+    if (writeToFile(ConfigFilePath, json.data(), json.size()) != json.size())
+    {
+        return false;
+    }
+
+    if (writeToFile(ConfigChecksumFilePath, hashMd5.c_str(), hashMd5.length()) != hashMd5.length())
+    {
+        return false;
+    }
+    return true;
 }

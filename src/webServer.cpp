@@ -4,6 +4,7 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <AsyncJson.h>
+#include <StreamString.h>
 
 #include "WiFiManager.h"
 #include "configManager.h"
@@ -32,6 +33,8 @@ static const char JqueryJsUrl[] PROGMEM = "/js/jquery.min.js";
 static const char SparkJsUrl[] PROGMEM = "/js/spark_md5.min.js";
 static const char MdbJsUrl[] PROGMEM = "/js/mdb.min.js";
 static const char MdbCssUrl[] PROGMEM = "/css/mdb.min.css";
+
+static const char MD5Header[] PROGMEM = "md5";
 
 const static StaticFilesMap staticFilesMap[] = {
 	{LoginUrl, login_html_gz, login_html_gz_len, true},
@@ -81,7 +84,8 @@ void WebServer::serverRouting()
 	// ajax form call
 	httpServer.on(PSTR("/factory.reset.handler"), HTTP_POST, factoryReset);
 	httpServer.on(PSTR("/homekit.reset.handler"), HTTP_POST, homekitReset);
-	httpServer.on(PSTR("/firmware.update.handler"), HTTP_POST, firmwareUpdateComplete, firmwareUpdateUpload);
+	httpServer.on(PSTR("/firmware.update.handler"), HTTP_POST, rebootOnUploadComplete, firmwareUpdateUpload);
+	httpServer.on(PSTR("/setting.restore.handler"), HTTP_POST, rebootOnUploadComplete, restoreConfigurationUpload);
 	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
 
 	// json ajax calls
@@ -208,7 +212,7 @@ void WebServer::configGet(AsyncWebServerRequest *request)
 	{
 		return;
 	}
-	const String json = config::instance.getAllConfigAsJson();
+	const auto json = config::instance.getAllConfigAsJson();
 	request->send(200, FPSTR(JsonMediaType), json);
 }
 
@@ -414,9 +418,9 @@ void WebServer::factoryReset(AsyncWebServerRequest *request)
 	operations::instance.factoryReset();
 }
 
-void WebServer::firmwareUpdateComplete(AsyncWebServerRequest *request)
+void WebServer::rebootOnUploadComplete(AsyncWebServerRequest *request)
 {
-	LOG_INFO(F("firmwareUpdateComplete"));
+	LOG_INFO(F("reboot"));
 
 	if (!manageSecurity(request))
 	{
@@ -595,8 +599,6 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 {
 	LOG_DEBUG(F("firmwareUpdateUpload"));
 
-	const auto MD5Header = F("md5");
-
 	if (!manageSecurity(request))
 	{
 		return;
@@ -623,7 +625,7 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 		if (operations::instance.startUpdate(request->contentLength(), md5, error))
 		{
 			// success, let's make sure we end the update if the client hangs up
-			request->onDisconnect(handleEarlyDisconnect);
+			request->onDisconnect(handleEarlyUpdateDisconnect);
 		}
 		else
 		{
@@ -649,6 +651,55 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 	}
 }
 
+void WebServer::restoreConfigurationUpload(AsyncWebServerRequest *request,
+										   const String &filename,
+										   size_t index,
+										   uint8_t *data,
+										   size_t len,
+										   bool final)
+{
+	LOG_DEBUG(F("restoreConfigurationUpload"));
+
+	if (!manageSecurity(request))
+	{
+		return;
+	}
+
+	String error;
+	if (!index)
+	{
+		WebServer::instance.restoreConfigData.clear();
+	}
+
+	for (size_t i = 0; i < len; i++)
+	{
+		WebServer::instance.restoreConfigData.push_back(data[i]);
+	}
+
+	if (final)
+	{
+		String md5;
+		if (request->hasHeader(MD5Header))
+		{
+			md5 = request->getHeader(MD5Header)->value();
+		}
+
+		LOG_DEBUG(F("Expected MD5:") << md5);
+
+		if (md5.length() != 32)
+		{
+			handleError(request, F("MD5 parameter invalid. Check file exists."), 500);
+			return;
+		}
+
+		if (!config::instance.restoreAllConfigAsJson(WebServer::instance.restoreConfigData, md5))
+		{
+			handleError(request, F("Restore Failed"), 500);
+			return;
+		}
+	}
+}
+
 void WebServer::handleError(AsyncWebServerRequest *request, const String &message, int code)
 {
 	if (!message.isEmpty())
@@ -662,9 +713,7 @@ void WebServer::handleError(AsyncWebServerRequest *request, const String &messag
 	request->send(response);
 }
 
-void WebServer::handleEarlyDisconnect()
+void WebServer::handleEarlyUpdateDisconnect()
 {
-	LOG_ERROR(F("Update process aborted"));
-	String error;
-	operations::instance.endUpdate(error);
+	operations::instance.abortUpdate();
 }

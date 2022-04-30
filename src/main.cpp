@@ -8,12 +8,8 @@
 #include "homeKit2.h"
 #include "logging.h"
 
-#include <umm_malloc/umm_heap_select.h>
-
 void setup(void)
 {
-	HeapSelectIram ephemeral;
-
 	Serial.begin(115200);
 	LOG_INFO(F("Before setup free heap: ") << ESP.getFreeHeap() / 1024 << " KB");
 
@@ -31,7 +27,7 @@ void loop(void)
 {
 	WifiManager::instance.loop();
 	config::instance.loop();
+	homeKit2::instance.loop();
 	hardware::instance.loop();
 	operations::instance.loop();
-	homeKit2::instance.loop();
 }
