@@ -509,7 +509,10 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 		if (path.equalsIgnoreCase(entry.Path))
 		{
 			auto response = request->beginResponse_P(200, contentType, entry.Data, entry.Size);
-			response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
+			if (worksWithoutAuth)
+			{
+				response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
+			}
 			if (entry.Zipped)
 			{
 				response->addHeader(F("Content-Encoding"), F("gzip"));

@@ -185,6 +185,11 @@ String WifiManager::SSID()
     return WiFi.SSID();
 }
 
+int8_t WifiManager::RSSI()
+{
+    return WiFi.RSSI();
+}
+
 // captive portal loop
 void WifiManager::loop()
 {
