@@ -27,7 +27,7 @@ void loop(void)
 {
 	WifiManager::instance.loop();
 	config::instance.loop();
+	homeKit2::instance.loop();
 	hardware::instance.loop();
 	operations::instance.loop();
-	homeKit2::instance.loop();
 }

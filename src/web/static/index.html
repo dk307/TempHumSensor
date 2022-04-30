@@ -27,11 +27,10 @@
 
             <!-- Right elements -->
             <div class="d-flex align-items-center">
-                <button type="button" class="btn btn-floating" data-mdb-toggle="modal" data-mdb-target="#settingsModal">
-                    <img src="media/settings.png" height="35" alt="Settings" loading="lazy" />
-                </button>
-                <button type="button" class="btn btn-floating" data-mdb-toggle="modal" data-mdb-target="#logoutModal">
-                    <img src="media/logout.png" height="35" alt="Logout" loading="lazy" />
+                <button type="button" class="btn btn-info me-2" data-mdb-toggle="modal"
+                    data-mdb-target="#settingsModal">Settings</button>
+                <button type="button" class="btn btn-info me-2" data-mdb-toggle="modal" data-mdb-target="#logoutModal">
+                    Logout
                 </button>
             </div>
             <!-- Right elements -->
@@ -68,8 +67,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="settingsModalLabel"> <img src="media/settings.png" height="20"
-                                alt="Settings" loading="lazy" />&nbsp;Settings</h5>
+                        <h5 class="modal-title" id="settingsModalLabel">Settings</h5>
                         <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                     </div>
 
@@ -106,9 +104,19 @@
                             </div>
 
                             <div class="p-2">
-                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
-                                    data-mdb-dismiss="modal" data-mdb-target="#firmwareUpdateModal">Firmware
-                                    update</button>
+                                <a role="button" class="btn btn-info btn-block" data-mdb-dismiss="modal"
+                                    id="backupButtonId">Backup</a>
+                                <a href="/api/config/get" id="backupButtonAId" download="backup.json" hidden>Backup</a>
+                            </div>
+
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-dismiss="modal"
+                                    id="restoreUploadButtonId">Restore</button>
+                            </div>
+
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-dismiss="modal"
+                                    id="firmwareUploadButtonId">Firmware update</button>
                             </div>
 
                             <div class="p-2">
@@ -369,42 +377,42 @@
         </div>
         <!-- Information Modal End -->
 
-        <!-- Firmware Update Modal Start-->
-        <form class="needs-validation" id="firmwareUploadForm" method="post" enctype="multipart/form-data">
-            <div class="modal fade" id="firmwareUpdateModal" tabindex="-1">
+        <!-- File Update Modal Start-->
+        <form class="needs-validation" id="fileUploadUploadForm" method="post" enctype="multipart/form-data">
+            <div class="modal fade" id="fileUploadUpdateModal" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="firmwareUpdateModalLabel">Firmware Upgrade</h5>
+                            <h5 class="modal-title" id="fileUploadUpdateModalLabel"></h5>
                             <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                         </div>
 
                         <div class="modal-body">
                             <div class="mb-1">
-                                <div>Select file for upload and upgrade</div>
+                                <div id="selectFileMessageId">Select firmware file for upload and upgrade</div>
                             </div>
                             <div class="mb-4">
-                                <input class="form-control" id="firmwareFileUploadId" type="file"
-                                    name="firmwareFileUploadId" required />
+                                <input class="form-control" id="fileUploadFileUploadId" type="file"
+                                    name="fileUploadFileUploadId" required />
                             </div>
-                            <div class="mb-4" id="firmwareUploadStatusWrapper">
+                            <div class="mb-4" id="fileUploadUploadStatusWrapper">
                                 <div>Upload Status:</div>
                                 <div class="progress" style="height: 15px;">
-                                    <div id="firmwareUploadProgressBar" class="progress-bar" role="progressbar"
+                                    <div id="fileUploadUploadProgressBar" class="progress-bar" role="progressbar"
                                         style="width: 0%;"></div>
                                 </div>
-                                <div id="firmwareUploadStatus"></div>
+                                <div id="fileUploadUploadStatus"></div>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-primary">Upgrade</button>
+                            <button class="btn btn-primary">Upload</button>
                             <button class="btn btn-secondary" data-mdb-dismiss="modal">Cancel</button>
                         </div>
                     </div>
                 </div>
             </div>
         </form>
-        <!-- Firmware update Modal End -->
+        <!-- File update Modal End -->
 
     </main>
 
@@ -494,10 +502,18 @@
             $('#confirmActionModal').modal('show');
         };
 
+        function showUploadFileModal(url, title, selectFileMessage) {
+            $('#fileUploadUploadForm').attr('action', url);
+            $('#fileUploadUpdateModalLabel').text(title);
+            $('#selectFileMessageId').text(selectFileMessage);
+            $("#fileUploadUploadStatusWrapper").hide();
+            $('#fileUploadUpdateModal').modal('show');
+        }
+
         var sensorUpdateIntervalID;
         var informationUpdateRefreshInterval;
         var homekitUpdateRefreshInterval;
-        var firmwareFileUploadMd5;
+        var fileUploadFileUploadMd5;
 
         $(document).ready(function () {
             // Wifi Password toggle
@@ -585,16 +601,28 @@
                 clearInterval(homekitUpdateRefreshInterval);
             });
 
-            document.getElementById('firmwareUploadForm').addEventListener('show.mdb.modal', (e) => {
-                $("#firmwareUploadStatusWrapper").hide();
-            });
-
             document.getElementById('restartDeviceButtonId').addEventListener('click', function () {
                 showConfirmModal('restart', '/restart.handler');
             });
 
             document.getElementById('factoryResetButtonId').addEventListener('click', function () {
                 showConfirmModal('factory reset', '/factory.reset.handler');
+            });
+
+            document.getElementById('backupButtonId').addEventListener('click', function () {
+                $('#backupButtonAId')[0].click();
+            });
+
+            document.getElementById('firmwareUploadButtonId').addEventListener('click', function () {
+                showUploadFileModal('/firmware.update.handler',
+                    'Firmware upgrade',
+                    'Select firmware file for upload and upgrade');
+            });
+
+            document.getElementById('restoreUploadButtonId').addEventListener('click', function () {
+                showUploadFileModal('/setting.restore.handler',
+                    'Restore Settings',
+                    'Select settings file for upload and restore');
             });
 
             document.getElementById('forgetHomeKitPairingButtonId').addEventListener('click', function () {
@@ -634,43 +662,44 @@
             });
 
             // File upload via Ajax
-            $("#firmwareUploadForm").on('submit', function (e) {
+            $("#fileUploadUploadForm").on('submit', function (e) {
                 e.preventDefault();
+                var form = $('#fileUploadUploadForm');
                 $.ajax({
                     xhr: function () {
                         var xhr = new window.XMLHttpRequest();
                         xhr.upload.addEventListener("progress", function (evt) {
                             if (evt.lengthComputable) {
                                 var percentComplete = ((evt.loaded / evt.total) * 100).toFixed();
-                                $("#firmwareUploadProgressBar").width(percentComplete + '%');
-                                $("#firmwareUploadProgressBar").html('<span class="text-center">' + percentComplete + '%</span>');
+                                $("#fileUploadUploadProgressBar").width(percentComplete + '%');
+                                $("#fileUploadUploadProgressBar").html('<span class="text-center">' + percentComplete + '%</span>');
                             }
                         }, false);
                         return xhr;
                     },
-                    type: 'POST',
-                    url: '/firmware.update.handler',
+                    type: form.attr('method'),
+                    url: form.attr('action'),
                     data: new FormData(this),
                     contentType: false,
                     cache: false,
                     processData: false,
-                    headers: { 'md5': firmwareFileUploadMd5 },
+                    headers: { 'md5': fileUploadFileUploadMd5 },
                     beforeSend: function () {
-                        $("#firmwareUploadProgressBar").width('0%');
-                        $('#firmwareUploadStatus').html('');
-                        $("#firmwareUploadStatusWrapper").show();
+                        $("#fileUploadUploadProgressBar").width('0%');
+                        $('#fileUploadUploadStatus').html('');
+                        $("#fileUploadUploadStatusWrapper").show();
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         if (jqXHR.status == 500) {
-                            $('#firmwareUploadStatus').html('<div class="text-danger" id="firmwareUpgradeError"></div>');
-                            $('#firmwareUpgradeError').text(jqXHR.responseText);
+                            $('#fileUploadUploadStatus').html('<div class="text-danger" id="fileUploadUpgradeError"></div>');
+                            $('#fileUploadUpgradeError').text(jqXHR.responseText);
                         } else {
-                            $('#firmwareUploadStatus').html('<div class="text-danger">File upload failed, please try again.</div>');
+                            $('#fileUploadUploadStatus').html('<div class="text-danger">File upload failed, please try again.</div>');
                         }
                     },
                     success: function (resp) {
-                        $('#reloadLoadingMessageId').html('Update successful. Loading...');
-                        $('#firmwareUpdateModal').modal('hide');
+                        $('#reloadLoadingMessageId').html('Upload successful. Loading...');
+                        $('#fileUploadUpdateModal').modal('hide');
                         $('#redirectingModal').modal('show');
                         setTimeout(function () {
                             $('#confirmActionModalRedirecting').trigger('click');
@@ -680,17 +709,15 @@
             });
 
             // md5
-
-            document.getElementById('firmwareFileUploadId').addEventListener('change', function () {
-
+            document.getElementById('fileUploadFileUploadId').addEventListener('change', function () {
                 if (this.files[0].size > 1024 * 1024) {
-                    $('#firmwareUploadStatus').html('<div class="text-danger">File is too big.</div>');
-                    $("#firmwareUploadStatusWrapper").show();
+                    $('#fileUploadUploadStatus').html('<div class="text-danger">File is too big.</div>');
+                    $("#fileUploadUploadStatusWrapper").show();
                     this.value = "";
                     return;
                 } else {
-                    $('#firmwareUploadStatus').html('');
-                    $("#firmwareUploadStatusWrapper").hide();
+                    $('#fileUploadUploadStatus').html('');
+                    $("#fileUploadUploadStatusWrapper").hide();
                 }
 
                 var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
@@ -707,9 +734,9 @@
 
                     if (currentChunk < chunks) {
                         loadNext();
-                    } else {
-                        console.info('computed hash', spark.end());  // Compute hash
-                        firmwareFileUploadMd5 = spark.end();
+                    } else {   
+                        fileUploadFileUploadMd5 = spark.end();
+                        console.info('computed hash', fileUploadFileUploadMd5);   
                     }
                 };
 

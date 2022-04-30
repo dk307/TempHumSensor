@@ -3,6 +3,9 @@
 #include <hash.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <AsyncJson.h>
+#include <StreamString.h>
+
 #include "WiFiManager.h"
 #include "configManager.h"
 #include "operations.h"
@@ -17,19 +20,31 @@ typedef struct
 	const unsigned char *Data;
 	const size_t Size;
 	const bool Zipped;
+
 } StaticFilesMap;
 
-const static StaticFilesMap staticFilesMap[] PROGMEM = {
-	{"/login.html", login_html_gz, login_html_gz_len, true},
-	{"/index.html", index_html_gz, index_html_gz_len, true},
-	{"/media/logo.png", logo_png, logo_png_len, false},
-	{"/media/favicon.png", favicon_png, favicon_png_len, false},
-	{"/media/logout.png", logout_png, logout_png_len, false},
-	{"/media/settings.png", settings_png, settings_png_len, false},
-	{"/js/jquery.min.js", jquery_min_js_gz, jquery_min_js_gz_len, true},
-	{"/js/spark_md5.min.js", spark_md5_min_js_gz, spark_md5_min_js_gz_len, true},
-	{"/js/mdb.min.js", mdb_min_js_gz, mdb_min_js_gz_len, true},
-	{"/css/mdb.min.css", mdb_min_css_gz, mdb_min_css_gz_len, true},
+static const char LoginUrl[] PROGMEM = "/login.html";
+static const char IndexUrl[] PROGMEM = "/index.html";
+static const char LogoUrl[] PROGMEM = "/media/logo.png";
+static const char FaviconUrl[] PROGMEM = "/media/favicon.png";
+static const char LogoutUrl[] PROGMEM = "/media/logout.png";
+static const char SettingsUrl[] PROGMEM = "/media/settings.png";
+static const char JqueryJsUrl[] PROGMEM = "/js/jquery.min.js";
+static const char SparkJsUrl[] PROGMEM = "/js/spark_md5.min.js";
+static const char MdbJsUrl[] PROGMEM = "/js/mdb.min.js";
+static const char MdbCssUrl[] PROGMEM = "/css/mdb.min.css";
+
+static const char MD5Header[] PROGMEM = "md5";
+
+const static StaticFilesMap staticFilesMap[] = {
+	{LoginUrl, login_html_gz, login_html_gz_len, true},
+	{IndexUrl, index_html_gz, index_html_gz_len, true},
+	{LogoUrl, logo_png, logo_png_len, false},
+	{FaviconUrl, favicon_png, favicon_png_len, false},
+	{JqueryJsUrl, jquery_min_js_gz, jquery_min_js_gz_len, true},
+	{SparkJsUrl, spark_md5_min_js_gz, spark_md5_min_js_gz_len, true},
+	{MdbJsUrl, mdb_min_js_gz, mdb_min_js_gz_len, true},
+	{MdbCssUrl, mdb_min_css_gz, mdb_min_css_gz_len, true},
 };
 
 WebServer WebServer::instance;
@@ -69,7 +84,8 @@ void WebServer::serverRouting()
 	// ajax form call
 	httpServer.on(PSTR("/factory.reset.handler"), HTTP_POST, factoryReset);
 	httpServer.on(PSTR("/homekit.reset.handler"), HTTP_POST, homekitReset);
-	httpServer.on(PSTR("/firmware.update.handler"), HTTP_POST, firmwareUpdateComplete, firmwareUpdateUpload);
+	httpServer.on(PSTR("/firmware.update.handler"), HTTP_POST, rebootOnUploadComplete, firmwareUpdateUpload);
+	httpServer.on(PSTR("/setting.restore.handler"), HTTP_POST, rebootOnUploadComplete, restoreConfigurationUpload);
 	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
 
 	// json ajax calls
@@ -90,14 +106,14 @@ void WebServer::wifiGet(AsyncWebServerRequest *request)
 		return;
 	}
 
-	String JSON;
-	StaticJsonDocument<200> jsonBuffer;
+	auto response = new AsyncJsonResponse(false, 256);
+	auto jsonBuffer = response->getRoot();
 
 	jsonBuffer[F("captivePortal")] = WifiManager::instance.isCaptivePortal();
 	jsonBuffer[F("ssid")] = WifiManager::SSID();
-	serializeJson(jsonBuffer, JSON);
 
-	request->send(200, FPSTR(JsonMediaType), JSON);
+	response->setLength();
+	request->send(response);
 }
 
 void WebServer::wifiUpdate(AsyncWebServerRequest *request)
@@ -140,7 +156,11 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 		return;
 	}
 
-	DynamicJsonDocument arr(1024);
+	const auto maxFreeHeapSize = ESP.getMaxFreeBlockSize() / 1024;
+	const auto freeHeap = ESP.getFreeHeap() / 1024;
+
+	auto response = new AsyncJsonResponse(true, 1024);
+	auto arr = response->getRoot();
 
 	addKeyValueObject(arr, F("AP SSID"), WiFi.SSID());
 	addKeyValueObject(arr, F("AP Signal Strength"), WiFi.RSSI());
@@ -149,8 +169,8 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 	addKeyValueObject(arr, F("Reset Reason"), ESP.getResetReason());
 	addKeyValueObject(arr, F("CPU Frequency (MHz)"), ESP.getCpuFreqMHz());
 
-	addKeyValueObject(arr, F("Max Block Free Size (KB)"), ESP.getMaxFreeBlockSize() / 1024);
-	addKeyValueObject(arr, F("Free Heap (KB)"), ESP.getFreeHeap() / 1024);
+	addKeyValueObject(arr, F("Max Block Free Size (KB)"), maxFreeHeapSize);
+	addKeyValueObject(arr, F("Free Heap (KB)"), freeHeap);
 
 	FSInfo fsInfo;
 	LittleFS.info(fsInfo);
@@ -158,9 +178,8 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 	addKeyValueObject(arr, F("Filesystem Total Size (KB)"), fsInfo.totalBytes / 1024);
 	addKeyValueObject(arr, F("Filesystem Free Size (KB)"), (fsInfo.totalBytes - fsInfo.usedBytes) / 1024);
 
-	String JSON;
-	serializeJson(arr, JSON);
-	request->send(200, FPSTR(JsonMediaType), JSON);
+	response->setLength();
+	request->send(response);
 }
 
 void WebServer::homekitGet(AsyncWebServerRequest *request)
@@ -171,7 +190,8 @@ void WebServer::homekitGet(AsyncWebServerRequest *request)
 		return;
 	}
 
-	DynamicJsonDocument arr(1024);
+	auto response = new AsyncJsonResponse(true, 1024);
+	auto arr = response->getRoot();
 
 	const bool paired = homeKit2::instance.isPaired();
 
@@ -181,9 +201,8 @@ void WebServer::homekitGet(AsyncWebServerRequest *request)
 		addKeyValueObject(arr, F("Password"), homeKit2::instance.getPassword());
 	}
 
-	String JSON;
-	serializeJson(arr, JSON);
-	request->send(200, FPSTR(JsonMediaType), JSON);
+	response->setLength();
+	request->send(response);
 }
 
 void WebServer::configGet(AsyncWebServerRequest *request)
@@ -193,12 +212,12 @@ void WebServer::configGet(AsyncWebServerRequest *request)
 	{
 		return;
 	}
-	const String json = config::instance.getAllConfigAsJson();
+	const auto json = config::instance.getAllConfigAsJson();
 	request->send(200, FPSTR(JsonMediaType), json);
 }
 
-template <class T>
-void addToJsonDoc(JsonDocument &doc, T id, float value)
+template <class V, class T>
+void addToJsonDoc(V &doc, T id, float value)
 {
 	if (!isnan(value))
 	{
@@ -213,14 +232,14 @@ void WebServer::sensorGet(AsyncWebServerRequest *request)
 	{
 		return;
 	}
+	auto response = new AsyncJsonResponse(false, 256);
+	auto doc = response->getRoot();
 
-	StaticJsonDocument<256> doc;
 	addToJsonDoc(doc, F("humidity"), hardware::instance.getHumidity());
 	addToJsonDoc(doc, F("temperatureC"), hardware::instance.getTemperatureC());
 
-	String buf;
-	serializeJson(doc, buf);
-	request->send(200, FPSTR(JsonMediaType), buf);
+	response->setLength();
+	request->send(response);
 }
 
 // Check if header is present and correct
@@ -330,8 +349,7 @@ void WebServer::webLoginUpdate(AsyncWebServerRequest *request)
 	}
 	else
 	{
-		LOG_WARNING(F("Correct Parameters not provided"));
-		request->send(400);
+		handleError(request, F("Correct Parameters not provided"), 400);
 	}
 
 	config::instance.save();
@@ -400,9 +418,9 @@ void WebServer::factoryReset(AsyncWebServerRequest *request)
 	operations::instance.factoryReset();
 }
 
-void WebServer::firmwareUpdateComplete(AsyncWebServerRequest *request)
+void WebServer::rebootOnUploadComplete(AsyncWebServerRequest *request)
 {
-	LOG_INFO(F("firmwareUpdateComplete"));
+	LOG_INFO(F("reboot"));
 
 	if (!manageSecurity(request))
 	{
@@ -469,19 +487,19 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 	if (path.endsWith(F("/")) || path.isEmpty())
 	{
 		LOG_DEBUG(F("Redirecting to index page"));
-		path = F("/index.html");
+		path = IndexUrl;
 	}
 
 	const bool worksWithoutAuth = path.startsWith(F("/media/")) ||
 								  path.startsWith(F("/js/")) ||
 								  path.startsWith(F("/css/")) ||
 								  path.startsWith(F("/font/")) ||
-								  path.equalsIgnoreCase(F("/login.html"));
+								  path.equalsIgnoreCase(LoginUrl);
 
 	if (!worksWithoutAuth && !isAuthenticated(request))
 	{
 		LOG_DEBUG(F("Redirecting to login page"));
-		path = F("/login.html");
+		path = LoginUrl;
 	}
 
 	const auto contentType = getContentType(path);
@@ -581,8 +599,6 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 {
 	LOG_DEBUG(F("firmwareUpdateUpload"));
 
-	const auto MD5Header = F("md5");
-
 	if (!manageSecurity(request))
 	{
 		return;
@@ -609,7 +625,7 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 		if (operations::instance.startUpdate(request->contentLength(), md5, error))
 		{
 			// success, let's make sure we end the update if the client hangs up
-			request->onDisconnect(handleEarlyDisconnect);
+			request->onDisconnect(handleEarlyUpdateDisconnect);
 		}
 		else
 		{
@@ -635,6 +651,55 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 	}
 }
 
+void WebServer::restoreConfigurationUpload(AsyncWebServerRequest *request,
+										   const String &filename,
+										   size_t index,
+										   uint8_t *data,
+										   size_t len,
+										   bool final)
+{
+	LOG_DEBUG(F("restoreConfigurationUpload"));
+
+	if (!manageSecurity(request))
+	{
+		return;
+	}
+
+	String error;
+	if (!index)
+	{
+		WebServer::instance.restoreConfigData.clear();
+	}
+
+	for (size_t i = 0; i < len; i++)
+	{
+		WebServer::instance.restoreConfigData.push_back(data[i]);
+	}
+
+	if (final)
+	{
+		String md5;
+		if (request->hasHeader(MD5Header))
+		{
+			md5 = request->getHeader(MD5Header)->value();
+		}
+
+		LOG_DEBUG(F("Expected MD5:") << md5);
+
+		if (md5.length() != 32)
+		{
+			handleError(request, F("MD5 parameter invalid. Check file exists."), 500);
+			return;
+		}
+
+		if (!config::instance.restoreAllConfigAsJson(WebServer::instance.restoreConfigData, md5))
+		{
+			handleError(request, F("Restore Failed"), 500);
+			return;
+		}
+	}
+}
+
 void WebServer::handleError(AsyncWebServerRequest *request, const String &message, int code)
 {
 	if (!message.isEmpty())
@@ -648,9 +713,7 @@ void WebServer::handleError(AsyncWebServerRequest *request, const String &messag
 	request->send(response);
 }
 
-void WebServer::handleEarlyDisconnect()
+void WebServer::handleEarlyUpdateDisconnect()
 {
-	LOG_ERROR(F("Update process aborted"));
-	String error;
-	operations::instance.endUpdate(error);
+	operations::instance.abortUpdate();
 }

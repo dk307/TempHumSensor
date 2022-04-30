@@ -123,6 +123,7 @@ bool operations::writeUpdate(const uint8_t *data, size_t length, String &error)
 bool operations::endUpdate(String &error)
 {
 	LOG_DEBUG(F("Update end called"));
+
 	if (Update.end(true))
 	{
 		LOG_INFO(F("Update end successful"));
@@ -133,6 +134,22 @@ bool operations::endUpdate(String &error)
 		getUpdateError(error);
 		LOG_ERROR(F("Update end failed with ") << error);
 		return false;
+	}
+}
+
+void operations::abortUpdate()
+{
+	LOG_DEBUG(F("Update end called"));
+	if (Update.isRunning())
+	{
+		if (Update.end(true))
+		{
+			LOG_INFO(F("Aborted update"));
+		}
+		else
+		{
+			LOG_ERROR(F("Aborted update failed"));
+		}
 	}
 }
 

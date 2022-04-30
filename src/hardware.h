@@ -1,6 +1,5 @@
 #pragma once
 
-#define SSD1306_NO_SPLASH
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <Adafruit_SSD1306.h>

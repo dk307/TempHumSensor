@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ESPAsyncWebServer.h>
+#include <vector>
 
 class WebServer
 {
@@ -28,9 +29,16 @@ private:
                                      uint8_t *data,
                                      size_t len,
                                      bool final);
-    static void firmwareUpdateComplete(AsyncWebServerRequest *request);
-    
-    static void handleEarlyDisconnect();
+    static void rebootOnUploadComplete(AsyncWebServerRequest *request);
+
+    static void restoreConfigurationUpload(AsyncWebServerRequest *request,
+                                           const String &filename,
+                                           size_t index,
+                                           uint8_t *data,
+                                           size_t len,
+                                           bool final);
+
+    static void handleEarlyUpdateDisconnect();
 
     // ajax
     static void sensorGet(AsyncWebServerRequest *request);
@@ -47,10 +55,11 @@ private:
     static void handleFileRead(AsyncWebServerRequest *request);
     static bool isCaptivePortalRequest(AsyncWebServerRequest *request);
     static void redirectToRoot(AsyncWebServerRequest *request);
-    static void handleError(AsyncWebServerRequest *request, const String& error, int code);
+    static void handleError(AsyncWebServerRequest *request, const String &error, int code);
 
     static bool isIp(const String &str);
     static String toStringIp(const IPAddress &ip);
 
     AsyncWebServer httpServer{80};
+    std::vector<uint8_t> restoreConfigData;
 };
