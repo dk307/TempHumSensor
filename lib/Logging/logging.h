@@ -2,7 +2,9 @@
 
 #include <Print.h>
 
+#ifndef LOG_FORMAT
 #define LOG_FORMAT 2
+#endif
 
 // Streaming operator for serial print use.
 

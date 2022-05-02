@@ -16,6 +16,7 @@ public:
     {
         return password;
     }
+    uint8_t getConnectedClientsCount();
 
 private:
     homeKit2(){};

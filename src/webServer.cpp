@@ -19,9 +19,16 @@ typedef struct
 	const char *Path;
 	const unsigned char *Data;
 	const size_t Size;
+	const char *MediaType;
 	const bool Zipped;
-
 } StaticFilesMap;
+
+static const char JsonMediaType[] PROGMEM = "application/json";
+static const char JsMediaType[] PROGMEM = "text/javascript";
+static const char HtmlMediaType[] PROGMEM = "text/html";
+static const char CssMediaType[] PROGMEM = "text/css";
+static const char PngMediaType[] PROGMEM = "image/png";
+static const char TextPlainMediaType[] PROGMEM = "text/plain";
 
 static const char LoginUrl[] PROGMEM = "/login.html";
 static const char IndexUrl[] PROGMEM = "/index.html";
@@ -35,22 +42,21 @@ static const char MdbJsUrl[] PROGMEM = "/js/mdb.min.js";
 static const char MdbCssUrl[] PROGMEM = "/css/mdb.min.css";
 
 static const char MD5Header[] PROGMEM = "md5";
+static const char CacheControlHeader[] PROGMEM = "Cache-Control";
+static const char CookieHeader[] PROGMEM = "Cookie";
 
 const static StaticFilesMap staticFilesMap[] = {
-	{LoginUrl, login_html_gz, login_html_gz_len, true},
-	{IndexUrl, index_html_gz, index_html_gz_len, true},
-	{LogoUrl, logo_png, logo_png_len, false},
-	{FaviconUrl, favicon_png, favicon_png_len, false},
-	{JqueryJsUrl, jquery_min_js_gz, jquery_min_js_gz_len, true},
-	{SparkJsUrl, spark_md5_min_js_gz, spark_md5_min_js_gz_len, true},
-	{MdbJsUrl, mdb_min_js_gz, mdb_min_js_gz_len, true},
-	{MdbCssUrl, mdb_min_css_gz, mdb_min_css_gz_len, true},
+	{LoginUrl, login_html_gz, login_html_gz_len, HtmlMediaType, true},
+	{IndexUrl, index_html_gz, index_html_gz_len, HtmlMediaType, true},
+	{LogoUrl, logo_png, logo_png_len, PngMediaType, false},
+	{FaviconUrl, favicon_png, favicon_png_len, PngMediaType, false},
+	{JqueryJsUrl, jquery_min_js_gz, jquery_min_js_gz_len, JsMediaType, true},
+	{SparkJsUrl, spark_md5_min_js_gz, spark_md5_min_js_gz_len, JsMediaType, true},
+	{MdbJsUrl, mdb_min_js_gz, mdb_min_js_gz_len, JsMediaType, true},
+	{MdbCssUrl, mdb_min_css_gz, mdb_min_css_gz_len, CssMediaType, true},
 };
 
 WebServer WebServer::instance;
-
-static const char JsonMediaType[] PROGMEM = "application/json";
-static const char TextPlainMediaType[] PROGMEM = "text/plain";
 
 void WebServer::begin()
 {
@@ -74,26 +80,26 @@ bool WebServer::manageSecurity(AsyncWebServerRequest *request)
 void WebServer::serverRouting()
 {
 	// form calls
-	httpServer.on(PSTR("/login.handler"), HTTP_POST, handleLogin);
-	httpServer.on(PSTR("/logout.handler"), HTTP_POST, handleLogout);
-	httpServer.on(PSTR("/wifiupdate.handler"), HTTP_POST, wifiUpdate);
+	httpServer.on(("/login.handler"), HTTP_POST, handleLogin);
+	httpServer.on(("/logout.handler"), HTTP_POST, handleLogout);
+	httpServer.on(("/wifiupdate.handler"), HTTP_POST, wifiUpdate);
 
-	httpServer.on(PSTR("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
-	httpServer.on(PSTR("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
+	httpServer.on(("/othersettings.update.handler"), HTTP_POST, otherSettingsUpdate);
+	httpServer.on(("/weblogin.update.handler"), HTTP_POST, webLoginUpdate);
 
 	// ajax form call
-	httpServer.on(PSTR("/factory.reset.handler"), HTTP_POST, factoryReset);
-	httpServer.on(PSTR("/homekit.reset.handler"), HTTP_POST, homekitReset);
-	httpServer.on(PSTR("/firmware.update.handler"), HTTP_POST, rebootOnUploadComplete, firmwareUpdateUpload);
-	httpServer.on(PSTR("/setting.restore.handler"), HTTP_POST, rebootOnUploadComplete, restoreConfigurationUpload);
-	httpServer.on(PSTR("/restart.handler"), HTTP_POST, restartDevice);
+	httpServer.on(("/factory.reset.handler"), HTTP_POST, factoryReset);
+	httpServer.on(("/homekit.reset.handler"), HTTP_POST, homekitReset);
+	httpServer.on(("/firmware.update.handler"), HTTP_POST, rebootOnUploadComplete, firmwareUpdateUpload);
+	httpServer.on(("/setting.restore.handler"), HTTP_POST, rebootOnUploadComplete, restoreConfigurationUpload);
+	httpServer.on(("/restart.handler"), HTTP_POST, restartDevice);
 
 	// json ajax calls
-	httpServer.on(PSTR("/api/sensor/get"), HTTP_GET, sensorGet);
-	httpServer.on(PSTR("/api/wifi/get"), HTTP_GET, wifiGet);
-	httpServer.on(PSTR("/api/information/get"), HTTP_GET, informationGet);
-	httpServer.on(PSTR("/api/homekit/get"), HTTP_GET, homekitGet);
-	httpServer.on(PSTR("/api/config/get"), HTTP_GET, configGet);
+	httpServer.on(("/api/sensor/get"), HTTP_GET, sensorGet);
+	httpServer.on(("/api/wifi/get"), HTTP_GET, wifiGet);
+	httpServer.on(("/api/information/get"), HTTP_GET, informationGet);
+	httpServer.on(("/api/homekit/get"), HTTP_GET, homekitGet);
+	httpServer.on(("/api/config/get"), HTTP_GET, configGet);
 
 	httpServer.onNotFound(handleFileRead);
 }
@@ -141,11 +147,24 @@ void WebServer::wifiUpdate(AsyncWebServerRequest *request)
 }
 
 template <class Array, class K, class T>
-void addKeyValueObject(Array &array, const K &key, const T &value)
+void WebServer::addKeyValueObject(Array &array, const K &key, const T &value)
 {
 	auto j1 = array.createNestedObject();
 	j1[F("key")] = key;
 	j1[F("value")] = value;
+}
+
+String WebServer::GetUptime()
+{
+	const auto now = millis() / 1000;
+	const auto hour = now / 3600;
+	const auto mins = (now % 3600) / 60;
+	const auto sec = (now % 3600) % 60;
+
+	StreamString upTime;
+	upTime.reserve(30U);
+	upTime.printf_P(PSTR("%02d hours %02d mins %02d secs"), hour, mins, sec);
+	return upTime;
 }
 
 void WebServer::informationGet(AsyncWebServerRequest *request)
@@ -162,6 +181,7 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 	auto response = new AsyncJsonResponse(true, 1024);
 	auto arr = response->getRoot();
 
+	addKeyValueObject(arr, F("Uptime"), GetUptime());
 	addKeyValueObject(arr, F("AP SSID"), WiFi.SSID());
 	addKeyValueObject(arr, F("AP Signal Strength"), WiFi.RSSI());
 	addKeyValueObject(arr, F("Mac Address"), WiFi.softAPmacAddress());
@@ -199,6 +219,10 @@ void WebServer::homekitGet(AsyncWebServerRequest *request)
 	if (!paired)
 	{
 		addKeyValueObject(arr, F("Password"), homeKit2::instance.getPassword());
+	}
+	else
+	{
+		addKeyValueObject(arr, F("Connected Clients Count"), homeKit2::instance.getConnectedClientsCount());
 	}
 
 	response->setLength();
@@ -246,9 +270,9 @@ void WebServer::sensorGet(AsyncWebServerRequest *request)
 bool WebServer::isAuthenticated(AsyncWebServerRequest *request)
 {
 	LOG_TRACE(F("Checking if authenticated"));
-	if (request->hasHeader(F("Cookie")))
+	if (request->hasHeader(FPSTR(CookieHeader)))
 	{
-		const String cookie = request->header(F("Cookie"));
+		const String cookie = request->header(FPSTR(CookieHeader));
 		LOG_TRACE(F("Found cookie: ") << cookie);
 
 		const String token = sha1(config::instance.data.webUserName + ":" +
@@ -267,16 +291,15 @@ bool WebServer::isAuthenticated(AsyncWebServerRequest *request)
 
 void WebServer::handleLogin(AsyncWebServerRequest *request)
 {
-	const auto CookieHeader = F("Cookie");
 	const auto UserNameParameter = F("username");
 	const auto PasswordParameter = F("password");
 
 	LOG_INFO(F("Handle login"));
 	String msg;
-	if (request->hasHeader(CookieHeader))
+	if (request->hasHeader(FPSTR(CookieHeader)))
 	{
 		// Print cookies
-		LOG_TRACE(F("Found cookie: ") << request->header(CookieHeader));
+		LOG_TRACE(F("Found cookie: ") << request->header(FPSTR(CookieHeader)));
 	}
 
 	if (request->hasArg(UserNameParameter) && request->hasArg(PasswordParameter))
@@ -288,7 +311,7 @@ void WebServer::handleLogin(AsyncWebServerRequest *request)
 			auto response = request->beginResponse(301); // Sends 301 redirect
 
 			response->addHeader(F("Location"), F("/"));
-			response->addHeader(F("Cache-Control"), F("no-cache"));
+			response->addHeader(FPSTR(CacheControlHeader), F("no-cache"));
 
 			String token = sha1(config::instance.data.webUserName + F(":") + config::instance.data.webPassword +
 								F(":") + request->client()->remoteIP().toString());
@@ -305,7 +328,7 @@ void WebServer::handleLogin(AsyncWebServerRequest *request)
 		auto response = request->beginResponse(301); // Sends 301 redirect
 
 		response->addHeader(F("Location"), F("/login.html?msg=") + msg);
-		response->addHeader(F("Cache-Control"), F("no-cache"));
+		response->addHeader(FPSTR(CacheControlHeader), F("no-cache"));
 		request->send(response);
 		return;
 	}
@@ -323,7 +346,7 @@ void WebServer::handleLogout(AsyncWebServerRequest *request)
 	LOG_INFO(F("Disconnection"));
 	AsyncWebServerResponse *response = request->beginResponse(301); // Sends 301 redirect
 	response->addHeader(F("Location"), F("/login.html?msg=User disconnected"));
-	response->addHeader(F("Cache-Control"), F("no-cache"));
+	response->addHeader(FPSTR(CacheControlHeader), F("no-cache"));
 	response->addHeader(F("Set-Cookie"), F("ESPSESSIONID=0"));
 	request->send(response);
 	return;
@@ -446,39 +469,6 @@ void WebServer::homekitReset(AsyncWebServerRequest *request)
 	operations::instance.reboot();
 }
 
-String WebServer::getContentType(const String &filename)
-{
-	if (filename.endsWith(F(".htm")))
-		return F("text/html");
-	else if (filename.endsWith(F(".html")))
-		return F("text/html");
-	else if (filename.endsWith(F(".css")))
-		return F("text/css");
-	else if (filename.endsWith(F(".js")))
-		return F("application/javascript");
-	else if (filename.endsWith(F(".json")))
-		return JsonMediaType;
-	else if (filename.endsWith(F(".png")))
-		return F("image/png");
-	else if (filename.endsWith(F(".gif")))
-		return F("image/gif");
-	else if (filename.endsWith(F(".jpg")))
-		return F("image/jpeg");
-	else if (filename.endsWith(F(".jpeg")))
-		return F("image/jpeg");
-	else if (filename.endsWith(F(".ico")))
-		return F("image/x-icon");
-	else if (filename.endsWith(F(".xml")))
-		return F("text/xml");
-	else if (filename.endsWith(F(".pdf")))
-		return F("application/x-pdf");
-	else if (filename.endsWith(F(".zip")))
-		return F("application/x-zip");
-	else if (filename.endsWith(F(".gz")))
-		return F("application/x-gzip");
-	return TextPlainMediaType;
-}
-
 void WebServer::handleFileRead(AsyncWebServerRequest *request)
 {
 	auto path = request->url();
@@ -487,39 +477,37 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 	if (path.endsWith(F("/")) || path.isEmpty())
 	{
 		LOG_DEBUG(F("Redirecting to index page"));
-		path = IndexUrl;
+		path = FPSTR(IndexUrl);
 	}
 
 	const bool worksWithoutAuth = path.startsWith(F("/media/")) ||
 								  path.startsWith(F("/js/")) ||
 								  path.startsWith(F("/css/")) ||
 								  path.startsWith(F("/font/")) ||
-								  path.equalsIgnoreCase(LoginUrl);
+								  path.equalsIgnoreCase(FPSTR(LoginUrl));
 
 	if (!worksWithoutAuth && !isAuthenticated(request))
 	{
 		LOG_DEBUG(F("Redirecting to login page"));
-		path = LoginUrl;
+		path = FPSTR(LoginUrl);
 	}
-
-	const auto contentType = getContentType(path);
 
 	for (auto &&entry : staticFilesMap)
 	{
-		if (path.equalsIgnoreCase(entry.Path))
+		if (path.equalsIgnoreCase(FPSTR(entry.Path)))
 		{
-			auto response = request->beginResponse_P(200, contentType, entry.Data, entry.Size);
+			auto response = request->beginResponse_P(200, FPSTR(entry.MediaType), entry.Data, entry.Size);
 			if (worksWithoutAuth)
 			{
-				response->addHeader(F("Cache-Control"), F("public, max-age=31536000"));
+				response->addHeader(FPSTR(CacheControlHeader), F("public, max-age=31536000"));
 			}
 			if (entry.Zipped)
 			{
 				response->addHeader(F("Content-Encoding"), F("gzip"));
 			}
 			request->send(response);
-			LOG_DEBUG(F("Served from Memory file path:") << path << F(" mimeType:") << contentType
-														 << F(" size:") << entry.Size);
+			LOG_DEBUG(F("Served path:") << path << F(" mimeType:") << entry.MediaType
+										<< F(" size:") << entry.Size);
 			return;
 		}
 	}
@@ -612,9 +600,9 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 	{
 		String md5;
 
-		if (request->hasHeader(MD5Header))
+		if (request->hasHeader(FPSTR(MD5Header)))
 		{
-			md5 = request->getHeader(MD5Header)->value();
+			md5 = request->getHeader(FPSTR(MD5Header))->value();
 		}
 
 		LOG_DEBUG(F("Expected MD5:") << md5);
@@ -682,9 +670,9 @@ void WebServer::restoreConfigurationUpload(AsyncWebServerRequest *request,
 	if (final)
 	{
 		String md5;
-		if (request->hasHeader(MD5Header))
+		if (request->hasHeader(FPSTR(MD5Header)))
 		{
-			md5 = request->getHeader(MD5Header)->value();
+			md5 = request->getHeader(FPSTR(MD5Header))->value();
 		}
 
 		LOG_DEBUG(F("Expected MD5:") << md5);
@@ -710,8 +698,8 @@ void WebServer::handleError(AsyncWebServerRequest *request, const String &messag
 		LOG_INFO(message);
 	}
 	AsyncWebServerResponse *response = request->beginResponse(code, TextPlainMediaType, message);
-	response->addHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
-	response->addHeader(F("(Pragma"), F("no-cache"));
+	response->addHeader(FPSTR(CacheControlHeader), F("no-cache, no-store, must-revalidate"));
+	response->addHeader(F("Pragma"), F("no-cache"));
 	response->addHeader(F("Expires"), F("-1"));
 	request->send(response);
 }

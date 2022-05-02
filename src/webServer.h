@@ -50,7 +50,6 @@ private:
     // helpers
     static bool isAuthenticated(AsyncWebServerRequest *request);
     static bool manageSecurity(AsyncWebServerRequest *request);
-    static String getContentType(const String &filename);
     static void handleNotFound(AsyncWebServerRequest *request);
     static void handleFileRead(AsyncWebServerRequest *request);
     static bool isCaptivePortalRequest(AsyncWebServerRequest *request);
@@ -59,6 +58,9 @@ private:
 
     static bool isIp(const String &str);
     static String toStringIp(const IPAddress &ip);
+    static String GetUptime();
+    template <class Array, class K, class T>
+    static void addKeyValueObject(Array &array, const K &key, const T &value);
 
     AsyncWebServer httpServer{80};
     std::vector<uint8_t> restoreConfigData;
