@@ -36,9 +36,7 @@ static const char LogoUrl[] PROGMEM = "/media/logo.png";
 static const char FaviconUrl[] PROGMEM = "/media/favicon.png";
 static const char LogoutUrl[] PROGMEM = "/media/logout.png";
 static const char SettingsUrl[] PROGMEM = "/media/settings.png";
-static const char JqueryJsUrl[] PROGMEM = "/js/jquery.min.js";
-static const char SparkJsUrl[] PROGMEM = "/js/spark_md5.min.js";
-static const char MdbJsUrl[] PROGMEM = "/js/mdb.min.js";
+static const char AllJsUrl[] PROGMEM = "/js/s.js";
 static const char MdbCssUrl[] PROGMEM = "/css/mdb.min.css";
 
 static const char MD5Header[] PROGMEM = "md5";
@@ -50,9 +48,7 @@ const static StaticFilesMap staticFilesMap[] = {
 	{IndexUrl, index_html_gz, index_html_gz_len, HtmlMediaType, true},
 	{LogoUrl, logo_png, logo_png_len, PngMediaType, false},
 	{FaviconUrl, favicon_png, favicon_png_len, PngMediaType, false},
-	{JqueryJsUrl, jquery_min_js_gz, jquery_min_js_gz_len, JsMediaType, true},
-	{SparkJsUrl, spark_md5_min_js_gz, spark_md5_min_js_gz_len, JsMediaType, true},
-	{MdbJsUrl, mdb_min_js_gz, mdb_min_js_gz_len, JsMediaType, true},
+	{AllJsUrl, s_js_gz, s_js_gz_len, JsMediaType, true},
 	{MdbCssUrl, mdb_min_css_gz, mdb_min_css_gz_len, CssMediaType, true},
 };
 

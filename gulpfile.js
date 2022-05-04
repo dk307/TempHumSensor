@@ -78,6 +78,7 @@ gulp.task('html', function() {
 gulp.task('js', function() {
     return gulp.src(baseFolder + '/js/*.js').
         pipe(stripcomments()).
+        pipe(concat("s.js")).
         pipe(gzip({ gzipOptions: { level: 9 } })).
         pipe(gulp.dest(dataFolder)).
         pipe(toHeader(null, true)).
