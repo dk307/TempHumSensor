@@ -61,6 +61,8 @@ private:
     static String GetUptime();
     template <class Array, class K, class T>
     static void addKeyValueObject(Array &array, const K &key, const T &value);
+    template <class V, class T>
+    static void addToJsonDoc(V &doc, T id, float value);
 
     AsyncWebServer httpServer{80};
     std::vector<uint8_t> restoreConfigData;

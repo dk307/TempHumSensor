@@ -181,6 +181,7 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 	auto response = new AsyncJsonResponse(true, 1024);
 	auto arr = response->getRoot();
 
+	addKeyValueObject(arr, F("Version"), VERSION);
 	addKeyValueObject(arr, F("Uptime"), GetUptime());
 	addKeyValueObject(arr, F("AP SSID"), WiFi.SSID());
 	addKeyValueObject(arr, F("AP Signal Strength"), WiFi.RSSI());
@@ -241,7 +242,7 @@ void WebServer::configGet(AsyncWebServerRequest *request)
 }
 
 template <class V, class T>
-void addToJsonDoc(V &doc, T id, float value)
+void WebServer::addToJsonDoc(V &doc, T id, float value)
 {
 	if (!isnan(value))
 	{
@@ -404,7 +405,7 @@ void WebServer::otherSettingsUpdate(AsyncWebServerRequest *request)
 
 	if (request->hasArg(showDisplayInF))
 	{
-		config::instance.data.showDisplayInF = !request->arg(showDisplayInF).equalsIgnoreCase("on");
+		config::instance.data.showDisplayInF = !request->arg(showDisplayInF).equalsIgnoreCase(F("on"));
 	}
 	else
 	{
