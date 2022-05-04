@@ -22,8 +22,8 @@ public:
 
     static IPAddress LocalIP();
     static String SSID();
+    static int8_t RSSI();
     void disconnect(bool disconnectWifi);
-
     static WifiManager instance;
 
 private:

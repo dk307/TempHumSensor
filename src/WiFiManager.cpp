@@ -75,7 +75,7 @@ void WifiManager::forget()
 {
     disconnect(false);
     startCaptivePortal();
-  
+
     LOG_INFO(F("Requested to forget WiFi. Started Captive portal."));
 }
 
@@ -183,6 +183,11 @@ IPAddress WifiManager::LocalIP()
 String WifiManager::SSID()
 {
     return WiFi.SSID();
+}
+
+int8_t WifiManager::RSSI()
+{
+    return WiFi.RSSI();
 }
 
 // captive portal loop

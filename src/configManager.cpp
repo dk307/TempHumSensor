@@ -19,7 +19,7 @@ static const char ShowDisplayInFId[] PROGMEM = "showdisplayinf";
 config config::instance;
 
 template <class... T>
-String config::md5Hash(T&&... data)
+String config::md5Hash(T &&...data)
 {
     MD5Builder hashBuilder;
     hashBuilder.begin();
@@ -29,7 +29,7 @@ String config::md5Hash(T&&... data)
 }
 
 template <class... T>
-size_t config::writeToFile(const String &fileName, T&&... contents)
+size_t config::writeToFile(const String &fileName, T &&...contents)
 {
     File file = LittleFS.open(fileName, "w");
     if (!file)
@@ -60,12 +60,8 @@ bool config::begin()
     }
 
     DynamicJsonDocument jsonDocument(2048);
-    DeserializationError error = deserializeJson(jsonDocument, configData);
-
-    // Test if parsing succeeds.
-    if (error)
+    if (!deserializeToJson(configData, jsonDocument)) 
     {
-        LOG_ERROR(F("deserializeJson for config failed: ") << error.f_str());
         reset();
         return false;
     }
@@ -179,8 +175,13 @@ String config::getAllConfigAsJson()
 
 bool config::restoreAllConfigAsJson(const std::vector<uint8_t> &json, const String &hashMd5)
 {
-    const auto expectedMd5 = md5Hash(json.data(), json.size());
+    DynamicJsonDocument jsonDocument(2048);
+    if (!deserializeToJson(json, jsonDocument)) 
+    {
+        return false;
+    }
 
+    const auto expectedMd5 = md5Hash(json.data(), json.size());
     if (!expectedMd5.equalsIgnoreCase(hashMd5))
     {
         LOG_ERROR(F("Uploaded Md5 for config does not match. File md5:") << expectedMd5);
@@ -194,6 +195,21 @@ bool config::restoreAllConfigAsJson(const std::vector<uint8_t> &json, const Stri
 
     if (writeToFile(ConfigChecksumFilePath, hashMd5.c_str(), hashMd5.length()) != hashMd5.length())
     {
+        return false;
+    }
+    return true;
+}
+
+template <class T>
+bool config::deserializeToJson(const T &data, DynamicJsonDocument &jsonDocument)
+{
+    DeserializationError error = deserializeJson(jsonDocument, data);
+
+    // Test if parsing succeeds.
+    if (error)
+    {
+        LOG_ERROR(F("deserializeJson for config failed: ") << error.f_str());
+
         return false;
     }
     return true;

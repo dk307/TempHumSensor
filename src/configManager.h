@@ -63,5 +63,8 @@ private:
     template <class... T>
     static size_t writeToFile(const String &fileName, T&&... contents);
 
+    template<class T>
+    bool deserializeToJson(const T &data, DynamicJsonDocument &jsonDocument);
+
     bool requestSave{false};
 };
