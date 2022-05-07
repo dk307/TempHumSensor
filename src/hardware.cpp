@@ -105,7 +105,23 @@ void hardware::display2Lines(const String &first, const String &second)
     display.setCursor((display.width() - w) / 2, h + 10 + 23);
     display.print(second.c_str());
 
+    if (random(10) == 1) // 1 in 10 screen saver
+    {
+        invertPixels();
+    }
+
     display.display();
+}
+
+void hardware::invertPixels()
+{
+    for (auto x = 0; x < display.width(); x++)
+    {
+        for (int y = 0; y < display.height(); y++)
+        {
+            display.drawPixel(x, y, SSD1306_INVERSE);
+        }
+    }
 }
 
 void hardware::updateDisplay()
@@ -121,7 +137,7 @@ void hardware::updateDisplay()
         {
             display.setTextSize(2);
             const auto displayTemperature = config::instance.data.showDisplayInF ? temperature * 9 / 5 + 32 : temperature;
-            const auto displayTemperatureUnit = config::instance.data.showDisplayInF ? F(" F") : F(" C");
+            const auto displayTemperatureUnit = config::instance.data.showDisplayInF ? F("\xB0 F") : F("\xB0 C");
             display2Lines(String(displayTemperature, 1) + displayTemperatureUnit, String(humidity, 0) + F(" %"));
         }
         else

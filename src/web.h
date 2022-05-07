@@ -5,6 +5,4 @@
 #include "web/include/login.html.gz.h"
 #include "web/include/logo.png.h"
 #include "web/include/mdb.min.css.gz.h"
-#include "web/include/jquery.min.js.gz.h"
-#include "web/include/mdb.min.js.gz.h"
-#include "web/include/spark_md5.min.js.gz.h"
+#include "web/include/s.js.gz.h"

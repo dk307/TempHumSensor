@@ -190,9 +190,15 @@ void homeKit2::onSensorRefreshIntervalChange(const homekit_value_t value)
     if (value.format == homekit_format_uint64)
     {
         homeKit2::instance.instance.sensorRefreshInterval = value.uint64_value;
+        updateChaValue(chaSensorRefershInterval, value.uint64_value);
         config::instance.data.sensorsRefreshInterval = homeKit2::instance.instance.sensorRefreshInterval * 1000;
         config::instance.save();
     }
+}
+
+uint8_t homeKit2::getConnectedClientsCount()
+{
+    return arduino_homekit_connected_clients_count();
 }
 
 bool read_storage(uint32 srcAddress, byte *desAddress, uint32 size)

@@ -182,6 +182,14 @@ void operations::loop()
 		rebootPending = false;
 		reset();
 	}
+
+	const int MaxSerialTime = 5 * 60 * 1000; // 5 mins
+	if (Serial.isTxEnabled() && millis() >= MaxSerialTime)
+	{
+		LOG_INFO(F("Turning off Serial"));
+		Serial.flush();
+		Serial.end();
+	}
 }
 
 [[noreturn]] void operations::reset()

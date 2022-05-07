@@ -50,7 +50,7 @@ void config::erase()
 
 bool config::begin()
 {
-    const auto configData = readFile(ConfigFilePath);
+    const auto configData = readFile(FPSTR(ConfigFilePath));
 
     if (configData.isEmpty())
     {
@@ -60,14 +60,14 @@ bool config::begin()
     }
 
     DynamicJsonDocument jsonDocument(2048);
-    if (!deserializeToJson(configData, jsonDocument)) 
+    if (!deserializeToJson(configData.c_str(), jsonDocument))
     {
         reset();
         return false;
     }
 
     // read checksum from file
-    const auto readChecksum = readFile(ConfigChecksumFilePath);
+    const auto readChecksum = readFile(FPSTR(ConfigChecksumFilePath));
     const auto checksum = md5Hash(configData);
 
     if (!checksum.equalsIgnoreCase(readChecksum))
@@ -109,29 +109,27 @@ void config::save()
 {
     LOG_INFO(F("Saving configuration"));
 
+    DynamicJsonDocument jsonDocument(2048);
+
+    jsonDocument[FPSTR(HostNameId)] = data.hostName.c_str();
+    jsonDocument[FPSTR(WebUserNameId)] = data.webUserName.c_str();
+    jsonDocument[FPSTR(WebPasswordId)] = data.webPassword.c_str();
+
+    const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
+    const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
+    base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
+
+    jsonDocument[FPSTR(HomeKitPairDataId)] = encodedData.get();
+    jsonDocument[FPSTR(SensorsRefreshIntervalId)] = data.sensorsRefreshInterval;
+    jsonDocument[FPSTR(ShowDisplayInFId)] = data.showDisplayInF;
+
     String json;
-    {
-        DynamicJsonDocument jsonDocument(2048);
+    serializeJson(jsonDocument, json);
 
-        jsonDocument[FPSTR(HostNameId)] = data.hostName.c_str();
-        jsonDocument[FPSTR(WebUserNameId)] = data.webUserName.c_str();
-        jsonDocument[FPSTR(WebPasswordId)] = data.webPassword.c_str();
-
-        const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
-        const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
-        base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
-
-        jsonDocument[FPSTR(HomeKitPairDataId)] = encodedData.get();
-        jsonDocument[FPSTR(SensorsRefreshIntervalId)] = data.sensorsRefreshInterval;
-        jsonDocument[FPSTR(ShowDisplayInFId)] = data.showDisplayInF;
-
-        serializeJson(jsonDocument, json);
-    }
-
-    if (writeToFile(ConfigFilePath, json.c_str(), json.length()) == json.length())
+    if (writeToFile(FPSTR(ConfigFilePath), json.c_str(), json.length()) == json.length())
     {
         const auto checksum = md5Hash(json);
-        if (writeToFile(ConfigChecksumFilePath, checksum.c_str(), checksum.length()) != checksum.length())
+        if (writeToFile(FPSTR(ConfigChecksumFilePath), checksum.c_str(), checksum.length()) != checksum.length())
         {
             LOG_ERROR(F("Failed to write config checksum file"));
         }
@@ -141,7 +139,7 @@ void config::save()
         LOG_ERROR(F("Failed to write config file"));
     }
 
-    LOG_TRACE(F("Saving done"));
+    LOG_INFO(F("Saving Configuration done"));
     callChangeListeners();
 }
 
@@ -170,13 +168,13 @@ String config::readFile(const String &fileName)
 String config::getAllConfigAsJson()
 {
     loop(); // save if needed
-    return readFile(ConfigFilePath);
+    return readFile(FPSTR(ConfigFilePath));
 }
 
 bool config::restoreAllConfigAsJson(const std::vector<uint8_t> &json, const String &hashMd5)
 {
     DynamicJsonDocument jsonDocument(2048);
-    if (!deserializeToJson(json, jsonDocument)) 
+    if (!deserializeToJson(json, jsonDocument))
     {
         return false;
     }
@@ -188,12 +186,12 @@ bool config::restoreAllConfigAsJson(const std::vector<uint8_t> &json, const Stri
         return false;
     }
 
-    if (writeToFile(ConfigFilePath, json.data(), json.size()) != json.size())
+    if (writeToFile(FPSTR(ConfigFilePath), json.data(), json.size()) != json.size())
     {
         return false;
     }
 
-    if (writeToFile(ConfigChecksumFilePath, hashMd5.c_str(), hashMd5.length()) != hashMd5.length())
+    if (writeToFile(FPSTR(ConfigChecksumFilePath), hashMd5.c_str(), hashMd5.length()) != hashMd5.length())
     {
         return false;
     }
@@ -209,7 +207,6 @@ bool config::deserializeToJson(const T &data, DynamicJsonDocument &jsonDocument)
     if (error)
     {
         LOG_ERROR(F("deserializeJson for config failed: ") << error.f_str());
-
         return false;
     }
     return true;

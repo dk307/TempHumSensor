@@ -10,6 +10,7 @@ var browserSync = require('browser-sync').create();
 var watch = require('gulp-watch');
 var reload = browserSync.reload;
 var stripcomments = require('gulp-strip-comments');
+var minifyInline = require('gulp-minify-inline');
 
 var log = require('fancy-log');
 
@@ -69,6 +70,7 @@ gulp.task('html', function() {
             minifyCSS: true,
             minifyJS: true
         })).
+        pipe(minifyInline()).
         pipe(gzip({ gzipOptions: { level: 9 } })).
         pipe(gulp.dest(dataFolder)).
         pipe(toHeader(null, true)).
@@ -78,6 +80,7 @@ gulp.task('html', function() {
 gulp.task('js', function() {
     return gulp.src(baseFolder + '/js/*.js').
         pipe(stripcomments()).
+        pipe(concat("s.js")).
         pipe(gzip({ gzipOptions: { level: 9 } })).
         pipe(gulp.dest(dataFolder)).
         pipe(toHeader(null, true)).
