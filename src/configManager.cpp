@@ -60,7 +60,7 @@ bool config::begin()
     }
 
     DynamicJsonDocument jsonDocument(2048);
-    if (!deserializeToJson(configData.c_str(), jsonDocument)) 
+    if (!deserializeToJson(configData.c_str(), jsonDocument))
     {
         reset();
         return false;
@@ -109,24 +109,22 @@ void config::save()
 {
     LOG_INFO(F("Saving configuration"));
 
+    DynamicJsonDocument jsonDocument(2048);
+
+    jsonDocument[FPSTR(HostNameId)] = data.hostName.c_str();
+    jsonDocument[FPSTR(WebUserNameId)] = data.webUserName.c_str();
+    jsonDocument[FPSTR(WebPasswordId)] = data.webPassword.c_str();
+
+    const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
+    const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
+    base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
+
+    jsonDocument[FPSTR(HomeKitPairDataId)] = encodedData.get();
+    jsonDocument[FPSTR(SensorsRefreshIntervalId)] = data.sensorsRefreshInterval;
+    jsonDocument[FPSTR(ShowDisplayInFId)] = data.showDisplayInF;
+
     String json;
-    {
-        DynamicJsonDocument jsonDocument(2048);
-
-        jsonDocument[FPSTR(HostNameId)] = data.hostName.c_str();
-        jsonDocument[FPSTR(WebUserNameId)] = data.webUserName.c_str();
-        jsonDocument[FPSTR(WebPasswordId)] = data.webPassword.c_str();
-
-        const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
-        const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
-        base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
-
-        jsonDocument[FPSTR(HomeKitPairDataId)] = encodedData.get();
-        jsonDocument[FPSTR(SensorsRefreshIntervalId)] = data.sensorsRefreshInterval;
-        jsonDocument[FPSTR(ShowDisplayInFId)] = data.showDisplayInF;
-
-        serializeJson(jsonDocument, json);
-    }
+    serializeJson(jsonDocument, json);
 
     if (writeToFile(FPSTR(ConfigFilePath), json.c_str(), json.length()) == json.length())
     {
@@ -141,7 +139,7 @@ void config::save()
         LOG_ERROR(F("Failed to write config file"));
     }
 
-    LOG_TRACE(F("Saving done"));
+    LOG_INFO(F("Saving Configuration done"));
     callChangeListeners();
 }
 
@@ -176,7 +174,7 @@ String config::getAllConfigAsJson()
 bool config::restoreAllConfigAsJson(const std::vector<uint8_t> &json, const String &hashMd5)
 {
     DynamicJsonDocument jsonDocument(2048);
-    if (!deserializeToJson(json, jsonDocument)) 
+    if (!deserializeToJson(json, jsonDocument))
     {
         return false;
     }

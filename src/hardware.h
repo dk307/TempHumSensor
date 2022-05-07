@@ -52,4 +52,5 @@ private:
     void updateDisplay();
     void display2Lines(const String &first, const String &second);
     static float roundPlaces(float val, int places);
+    void invertPixels();
 };
