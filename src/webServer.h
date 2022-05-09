@@ -55,6 +55,8 @@ private:
     static bool isCaptivePortalRequest(AsyncWebServerRequest *request);
     static void redirectToRoot(AsyncWebServerRequest *request);
     static void handleError(AsyncWebServerRequest *request, const String &error, int code);
+    void onEventConnect(AsyncEventSourceClient *client);
+    bool filterEvents(AsyncWebServerRequest *request);
 
     static bool isIp(const String &str);
     static String toStringIp(const IPAddress &ip);
@@ -63,7 +65,10 @@ private:
     static void addKeyValueObject(Array &array, const K &key, const T &value);
     template <class V, class T>
     static void addToJsonDoc(V &doc, T id, float value);
+    void notifyTemperatureChange();
+    void notifyHumidityChange();
 
     AsyncWebServer httpServer{80};
+    AsyncEventSource events{"/events"};
     std::vector<uint8_t> restoreConfigData;
 };

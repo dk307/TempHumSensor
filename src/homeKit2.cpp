@@ -124,7 +124,8 @@ void homeKit2::loop()
         {
             notifyIPAddressChange();
         }
-        if (rssi != WifiManager::instance.RSSI())
+        const auto delta = std::abs(rssi - WifiManager::instance.RSSI());
+        if (delta > 2)
         {
             notifyWifiRssiChange();
         }

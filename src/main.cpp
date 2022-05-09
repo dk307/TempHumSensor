@@ -11,8 +11,8 @@
 void setup(void)
 {
 	Serial.begin(115200);
-	LOG_INFO(F("Before setup free heap: ") << ESP.getFreeHeap() / 1024 << F(" KB"));
 
+	
 	operations::instance.begin();
 	config::instance.begin();
 	WifiManager::instance.begin();
