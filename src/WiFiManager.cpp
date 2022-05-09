@@ -36,6 +36,7 @@ void WifiManager::begin()
     {
         // connected
         LOG_INFO(F("Connected to stored WiFi details with IP: ") << WiFi.localIP());
+        WiFi.setHostname(rfcName.c_str());
     }
     else
     {

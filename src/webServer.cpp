@@ -57,9 +57,16 @@ WebServer WebServer::instance;
 void WebServer::begin()
 {
 	LOG_DEBUG(F("WebServer Starting"));
+
+	events.onConnect(std::bind(&WebServer::onEventConnect, this, std::placeholders::_1));
+	events.setFilter(std::bind(&WebServer::filterEvents, this, std::placeholders::_1));
+	httpServer.addHandler(&events);
 	httpServer.begin();
 	serverRouting();
 	LOG_INFO(F("WebServer Started"));
+
+	hardware::instance.temperatureChangeCallback.addConfigSaveCallback(std::bind(&WebServer::notifyTemperatureChange, this));
+	hardware::instance.humidityChangeCallback.addConfigSaveCallback(std::bind(&WebServer::notifyHumidityChange, this));
 }
 
 bool WebServer::manageSecurity(AsyncWebServerRequest *request)
@@ -68,6 +75,16 @@ bool WebServer::manageSecurity(AsyncWebServerRequest *request)
 	{
 		LOG_WARNING(F("Auth Failed"));
 		request->send(401, FPSTR(JsonMediaType), F("{\"msg\": \"Not-authenticated\"}"));
+		return false;
+	}
+	return true;
+}
+
+bool WebServer::filterEvents(AsyncWebServerRequest *request)
+{
+	if (!isAuthenticated(request))
+	{
+		LOG_WARNING(F("Dropping events request"));
 		return false;
 	}
 	return true;
@@ -98,6 +115,21 @@ void WebServer::serverRouting()
 	httpServer.on(("/api/config/get"), HTTP_GET, configGet);
 
 	httpServer.onNotFound(handleFileRead);
+}
+
+void WebServer::onEventConnect(AsyncEventSourceClient *client)
+{
+	if (client->lastId())
+	{
+		LOG_INFO(F("Events client reconnect"));
+	}
+	else
+	{
+		LOG_INFO(F("Events client first time"));
+		// send all the events
+		notifyTemperatureChange();
+		notifyHumidityChange();
+	}
 }
 
 void WebServer::wifiGet(AsyncWebServerRequest *request)
@@ -704,4 +736,14 @@ void WebServer::handleError(AsyncWebServerRequest *request, const String &messag
 void WebServer::handleEarlyUpdateDisconnect()
 {
 	operations::instance.abortUpdate();
+}
+
+void WebServer::notifyTemperatureChange()
+{
+	events.send(String(hardware::instance.getTemperatureC()).c_str(), "temperature", millis());
+}
+
+void WebServer::notifyHumidityChange()
+{
+	events.send(String(hardware::instance.getHumidity()).c_str(), "humidity", millis());
 }

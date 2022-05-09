@@ -433,26 +433,21 @@
             });
         }
 
-        function updateSensorValues() {
-            var anyModalShown = $('.modal').is(':visible');
-            if (!anyModalShown) {
-                $.ajax({
-                    type: "GET",
-                    url: "/api/sensor/get",
-                    async: true,
-                    dataType: "json",
-                    success: function (data) {
-                        if (data != null) {
-                            if (data.hasOwnProperty('temperatureC')) {
-                                var tempC = data['temperatureC'];
-                                var tempF = tempC * 9 / 5 + 32;
-                                $('#temperatureC').html(tempC);
-                                $('#temperatureF').html(Math.round(tempF * 10) / 10);
-                            }
-                            $('#humidity').html(data['humidity']);
-                        }
-                    }
-                });
+        function updateTemperature(e) {
+            var data = e.data;
+            if (data != null) {
+                var tempC = parseFloat(data);
+                var tempF = tempC * 9 / 5 + 32;
+                $('#temperatureC').html(tempC);
+                $('#temperatureF').html(Math.round(tempF * 10) / 10);
+            }
+        }
+
+        function updateHumidity(e) {
+            var data = e.data;
+            if (data != null) {
+                var hum = parseFloat(data);
+                $('#humidity').html(hum);
             }
         }
 
@@ -508,7 +503,7 @@
             $('#fileUploadUpdateModal').modal('show');
         }
 
-        var sensorUpdateIntervalID;
+        var eventsSource = new EventSource('/events');
         var informationUpdateRefreshInterval;
         var homekitUpdateRefreshInterval;
         var fileUploadFileUploadMd5;
@@ -732,9 +727,9 @@
 
                     if (currentChunk < chunks) {
                         loadNext();
-                    } else {   
+                    } else {
                         fileUploadFileUploadMd5 = spark.end();
-                        console.info('computed hash', fileUploadFileUploadMd5);   
+                        console.info('computed hash', fileUploadFileUploadMd5);
                     }
                 };
 
@@ -753,9 +748,9 @@
         });
 
         $(document).ready(function () {
-            updateSensorValues();
+            eventsSource.addEventListener("temperature", updateTemperature);
+            eventsSource.addEventListener("humidity", updateHumidity);
             updateHostName();
-            sensorUpdateIntervalID = setInterval(updateSensorValues, 10000);
         });
     </script>
 </body>

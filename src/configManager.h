@@ -27,11 +27,12 @@ struct configData
 
     void setDefaults()
     {
+        const auto defaultUserIDPassword = F("admin");
         hostName.clear();
-        webUserName = F("admin");
-        webPassword = F("admin");
+        webUserName = defaultUserIDPassword;
+        webPassword = defaultUserIDPassword;
         homeKitPairData.resize(0);
-        sensorsRefreshInterval = 15 * 1000;
+        sensorsRefreshInterval = 5 * 1000;
         showDisplayInF = false;
     }
 };

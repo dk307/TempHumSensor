@@ -11,7 +11,7 @@ public:
         configsavecallback.push_back(func);
     }
 
-    void callChangeListeners()
+    void callChangeListeners() const
     {
         for (auto &&ftn : configsavecallback)
         {
