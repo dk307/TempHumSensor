@@ -44,8 +44,8 @@ static const char CacheControlHeader[] PROGMEM = "Cache-Control";
 static const char CookieHeader[] PROGMEM = "Cookie";
 
 const static StaticFilesMap staticFilesMap[] = {
-	{LoginUrl, login_html_gz, login_html_gz_len, HtmlMediaType, true},
 	{IndexUrl, index_html_gz, index_html_gz_len, HtmlMediaType, true},
+	{LoginUrl, login_html_gz, login_html_gz_len, HtmlMediaType, true},
 	{LogoUrl, logo_png, logo_png_len, PngMediaType, false},
 	{FaviconUrl, favicon_png, favicon_png_len, PngMediaType, false},
 	{AllJsUrl, s_js_gz, s_js_gz_len, JsMediaType, true},
@@ -57,10 +57,13 @@ WebServer WebServer::instance;
 void WebServer::begin()
 {
 	LOG_DEBUG(F("WebServer Starting"));
-
 	events.onConnect(std::bind(&WebServer::onEventConnect, this, std::placeholders::_1));
+	logging.onConnect(std::bind(&WebServer::onLoggingConnect, this, std::placeholders::_1));
 	events.setFilter(std::bind(&WebServer::filterEvents, this, std::placeholders::_1));
+	logging.setFilter(std::bind(&WebServer::filterEvents, this, std::placeholders::_1));
+	Logger.setMsgCallback(std::bind(&WebServer::sendLogs, this, std::placeholders::_1));
 	httpServer.addHandler(&events);
+	httpServer.addHandler(&logging);
 	httpServer.begin();
 	serverRouting();
 	LOG_INFO(F("WebServer Started"));
@@ -130,6 +133,11 @@ void WebServer::onEventConnect(AsyncEventSourceClient *client)
 		notifyTemperatureChange();
 		notifyHumidityChange();
 	}
+}
+
+void WebServer::onLoggingConnect(AsyncEventSourceClient *)
+{
+	 Logger.enableLogging();
 }
 
 void WebServer::wifiGet(AsyncWebServerRequest *request)
@@ -740,10 +748,28 @@ void WebServer::handleEarlyUpdateDisconnect()
 
 void WebServer::notifyTemperatureChange()
 {
-	events.send(String(hardware::instance.getTemperatureC()).c_str(), "temperature", millis());
+	if (events.count())
+	{
+		events.send(String(hardware::instance.getTemperatureC()).c_str(), "temperature", millis());
+	}
 }
 
 void WebServer::notifyHumidityChange()
 {
-	events.send(String(hardware::instance.getHumidity()).c_str(), "humidity", millis());
+	if (events.count())
+	{
+		events.send(String(hardware::instance.getHumidity()).c_str(), "humidity", millis());
+	}
+}
+
+bool WebServer::sendLogs(const String& data)
+{
+	// Serial.println(data);
+	if (logging.count() > 0)
+	{
+		logging.send(data.c_str(), "logs", millis());
+		return true;
+	}
+
+	return false;
 }

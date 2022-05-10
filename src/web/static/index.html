@@ -12,6 +12,13 @@
     <link rel="shortcut icon" href="media/favicon.png" type="image/x-icon">
     <link rel="icon" href="media/favicon.png" type="image/x-icon">
     <title>Main</title>
+    <style>
+        .logs {
+            white-space: -moz-pre-wrap;
+            white-space: -o-pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
 </head>
 
 <body>
@@ -97,6 +104,10 @@
                             <div class="p-2">
                                 <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
                                     data-mdb-dismiss="modal" data-mdb-target="#informationModal">Information</button>
+                            </div>
+                            <div class="p-2">
+                                <button type="button" class="btn btn-info btn-block" data-mdb-toggle="modal"
+                                    data-mdb-dismiss="modal" data-mdb-target="#logsModal">Logs</button>
                             </div>
                             <div class="p-2">
                                 <button type="button" class="btn btn-info btn-block" data-mdb-dismiss="modal"
@@ -377,6 +388,25 @@
         </div>
         <!-- Information Modal End -->
 
+        <!-- Logs Modal Start-->
+        <div class="modal fade" id="logsModal" tabindex="-1">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Logs</h5>
+                        <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <pre class="logs"><code id="logsBlock"></code></pre>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" data-mdb-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Logs Modal End -->
+
         <!-- File Update Modal Start-->
         <form class="needs-validation" id="fileUploadUploadForm" method="post" enctype="multipart/form-data">
             <div class="modal fade" id="fileUploadUpdateModal" tabindex="-1">
@@ -583,6 +613,29 @@
 
             document.getElementById('informationModal').addEventListener('hide.mdb.modal', (e) => {
                 clearInterval(informationUpdateRefreshInterval);
+            });
+
+            var logsSource;
+
+            function appendLogs(e) {
+                var data = e.data;
+                if (data != null) {
+                    var logsBlock = $('#logsBlock');
+                    logsBlock.html(logsBlock.html() + data + "\r\n");
+                }
+            }
+
+            document.getElementById('logsModal').addEventListener('show.mdb.modal', (e) => {
+                $('#logsBlock').text('');
+                logsSource = new EventSource('/logs');
+                logsSource.addEventListener("logs", appendLogs);
+            });
+
+            document.getElementById('logsModal').addEventListener('hide.mdb.modal', (e) => {
+                if (logsSource) {
+                    logsSource.close();
+                    logsSource = null;
+                }
             });
 
             document.getElementById('homekitModal').addEventListener('show.mdb.modal', (e) => {

@@ -53,6 +53,7 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "homekit.h": "c"
+        "homekit.h": "c",
+        "*.tpp": "cpp"
     }
 }
