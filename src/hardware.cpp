@@ -19,7 +19,6 @@ void hardware::begin()
     config::instance.addConfigSaveCallback(ftn);
     WifiManager::instance.addConfigSaveCallback(ftn);
 
-    dht.begin();
 
     Wire.begin(SDAWire, SCLWire);
 
@@ -27,6 +26,8 @@ void hardware::begin()
     {
         LOG_ERROR(F("SSD1306 allocation failed"));
     }
+
+    tempHumSensor.begin(SHT31Address);
 
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE); // Draw white text
@@ -62,8 +63,8 @@ bool hardware::dhtUpdate()
     const auto now = millis();
     if ((now - lastRead > config::instance.data.sensorsRefreshInterval) || updateTempNow)
     {
-        const auto temp = roundPlaces(dht.readTemperature(), 1);
-        const auto hum = roundPlaces(dht.readHumidity(), 0);
+        const auto temp = roundPlaces(tempHumSensor.readTemperature(), 1);
+        const auto hum = roundPlaces(tempHumSensor.readHumidity(), 0);
 
         if (temperature != temp)
         {

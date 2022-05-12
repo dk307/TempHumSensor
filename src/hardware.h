@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Adafruit_Sensor.h>
-#include <DHT.h>
+#include <Adafruit_SHT31.h>
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -34,9 +34,10 @@ private:
     // DHT
     float temperature{NAN};
     float humidity{NAN};
-    const uint8_t DhtPin = 13;
-    const uint8_t DhtType = DHT22; // DHT 22 (AM2302)
-    DHT dht{DhtPin, DhtType};
+
+    // SHT31
+    const int SHT31Address = 0x44;
+    Adafruit_SHT31  tempHumSensor;
     uint64_t lastRead{0};
 
     // SSD1306

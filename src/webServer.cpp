@@ -18,9 +18,9 @@ typedef struct
 {
 	const char *Path;
 	const unsigned char *Data;
-	const size_t Size;
+	const uint32_t Size;
 	const char *MediaType;
-	const bool Zipped;
+	const uint8_t Zipped;
 } StaticFilesMap;
 
 static const char JsonMediaType[] PROGMEM = "application/json";
@@ -43,7 +43,7 @@ static const char MD5Header[] PROGMEM = "md5";
 static const char CacheControlHeader[] PROGMEM = "Cache-Control";
 static const char CookieHeader[] PROGMEM = "Cookie";
 
-const static StaticFilesMap staticFilesMap[] = {
+const static StaticFilesMap staticFilesMap[] PROGMEM = {
 	{IndexUrl, index_html_gz, index_html_gz_len, HtmlMediaType, true},
 	{LoginUrl, login_html_gz, login_html_gz_len, HtmlMediaType, true},
 	{LogoUrl, logo_png, logo_png_len, PngMediaType, false},
@@ -137,7 +137,7 @@ void WebServer::onEventConnect(AsyncEventSourceClient *client)
 
 void WebServer::onLoggingConnect(AsyncEventSourceClient *)
 {
-	 Logger.enableLogging();
+	Logger.enableLogging();
 }
 
 void WebServer::wifiGet(AsyncWebServerRequest *request)
@@ -526,25 +526,30 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 	if (!worksWithoutAuth && !isAuthenticated(request))
 	{
 		LOG_DEBUG(F("Redirecting to login page"));
-		path = FPSTR(LoginUrl);
+		path = String(FPSTR(LoginUrl));
 	}
 
-	for (auto &&entry : staticFilesMap)
+	for (size_t i = 0; i < sizeof(staticFilesMap) / sizeof(staticFilesMap[0]); i++)
 	{
-		if (path.equalsIgnoreCase(FPSTR(entry.Path)))
+		const auto entryPath = FPSTR(pgm_read_ptr(&staticFilesMap[i].Path));
+		if (path.equalsIgnoreCase(entryPath))
 		{
-			auto response = request->beginResponse_P(200, FPSTR(entry.MediaType), entry.Data, entry.Size);
+			const auto mediaType = FPSTR(pgm_read_ptr(&staticFilesMap[i].MediaType));
+			const auto data = reinterpret_cast<const uint8_t *>(pgm_read_ptr(&staticFilesMap[i].Data));
+			const auto size = pgm_read_dword(&staticFilesMap[i].Size);
+			const auto zipped = pgm_read_byte(&staticFilesMap[i].Zipped);
+			auto response = request->beginResponse_P(200, String(mediaType), data, size);
 			if (worksWithoutAuth)
 			{
 				response->addHeader(FPSTR(CacheControlHeader), F("public, max-age=31536000"));
 			}
-			if (entry.Zipped)
+			if (zipped)
 			{
 				response->addHeader(F("Content-Encoding"), F("gzip"));
 			}
 			request->send(response);
-			LOG_DEBUG(F("Served path:") << path << F(" mimeType:") << entry.MediaType
-										<< F(" size:") << entry.Size);
+			LOG_DEBUG(F("Served path:") << path << F(" mimeType:") << mediaType
+										<< F(" size:") << size);
 			return;
 		}
 	}
@@ -762,9 +767,9 @@ void WebServer::notifyHumidityChange()
 	}
 }
 
-bool WebServer::sendLogs(const String& data)
+bool WebServer::sendLogs(const String &data)
 {
-	// Serial.println(data);
+	//Serial.println(data);
 	if (logging.count() > 0)
 	{
 		logging.send(data.c_str(), "logs", millis());

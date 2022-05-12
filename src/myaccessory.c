@@ -44,7 +44,7 @@
     ##__VA_ARGS__
 
 homekit_characteristic_t chaCurrentTemperature = HOMEKIT_CHARACTERISTIC_(CURRENT_TEMPERATURE, 0, 
-                                                    .min_value = (float[]){-40}, .max_value = (float[]){125}, .id = 200);
+                                                    .min_value = (float[]){-40}, .max_value = (float[]){120}, .id = 200);
 homekit_characteristic_t chaHumidity = HOMEKIT_CHARACTERISTIC_(CURRENT_RELATIVE_HUMIDITY, 0, .id = 300);
 homekit_characteristic_t chaWifiIPAddress = HOMEKIT_CHARACTERISTIC_(CUSTOM_IP_ADDR, "", .id = 400);
 homekit_characteristic_t chaWifiRssi = HOMEKIT_CHARACTERISTIC_(CUSTOM_WIFI_RSSI, 0, .id = 401);
@@ -54,7 +54,7 @@ homekit_accessory_t *accessories[] = {
     HOMEKIT_ACCESSORY(.id=1, .category=homekit_accessory_category_sensor, .services=(homekit_service_t*[]) {
         HOMEKIT_SERVICE(ACCESSORY_INFORMATION, .id=1, .characteristics=(homekit_characteristic_t*[]) {
             HOMEKIT_CHARACTERISTIC(NAME, "Sensor", .id=100),
-            HOMEKIT_CHARACTERISTIC(MODEL, "Wemo Temperature Humidity Sensor", .id=101),
+            HOMEKIT_CHARACTERISTIC(MODEL, "Temperature Humidity Sensor", .id=101),
             HOMEKIT_CHARACTERISTIC(SERIAL_NUMBER, NULL, .id=102),
             HOMEKIT_CHARACTERISTIC(FIRMWARE_REVISION, XSTRINFGY(VERSION), .id=103),
             NULL

@@ -74,7 +74,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="settingsModalLabel">Settings</h5>
+                        <h5 class="modal-title">Settings</h5>
                         <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                     </div>
 
@@ -150,7 +150,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="wifiSettingsModalLabel">Wifi Settings</h5>
+                            <h5 class="modal-title">Wifi Settings</h5>
                             <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                         </div>
 
@@ -187,7 +187,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="confirmActionLabel">Confirm</h5>
+                            <h5 class="modal-title">Confirm</h5>
                             <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                         </div>
 
@@ -298,7 +298,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="otherSettingsModalLabel">Other Settings</h5>
+                            <h5 class="modal-title">Other Settings</h5>
                             <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                         </div>
 
@@ -337,7 +337,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="homekitModalLabel">Homekit</h5>
+                        <h5 class="modal-title">Homekit</h5>
                         <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                     </div>
 
@@ -366,7 +366,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="informationModalLabel">Information</h5>
+                        <h5 class="modal-title">Information</h5>
                         <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
                     </div>
 
@@ -409,7 +409,7 @@
 
         <!-- File Update Modal Start-->
         <form class="needs-validation" id="fileUploadUploadForm" method="post" enctype="multipart/form-data">
-            <div class="modal fade" id="fileUploadUpdateModal" tabindex="-1">
+            <div class="modal fade" id="fileUploadUpdateModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -435,8 +435,8 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-primary">Upload</button>
-                            <button class="btn btn-secondary" data-mdb-dismiss="modal">Cancel</button>
+                            <button class="btn btn-primary" id="fileUploadButton">Upload</button>
+                            <button class="btn btn-secondary" data-mdb-dismiss="modal">Close</button>
                         </div>
                     </div>
                 </div>
@@ -530,6 +530,7 @@
             $('#fileUploadUpdateModalLabel').text(title);
             $('#selectFileMessageId').text(selectFileMessage);
             $("#fileUploadUploadStatusWrapper").hide();
+            $('#fileUploadButton').show();
             $('#fileUploadUpdateModal').modal('show');
         }
 
@@ -734,6 +735,7 @@
                         $("#fileUploadUploadProgressBar").width('0%');
                         $('#fileUploadUploadStatus').html('');
                         $("#fileUploadUploadStatusWrapper").show();
+                        $('#fileUploadButton').hide();
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         if (jqXHR.status == 500) {
@@ -742,6 +744,7 @@
                         } else {
                             $('#fileUploadUploadStatus').html('<div class="text-danger">File upload failed, please try again.</div>');
                         }
+                        $('#fileUploadButton').show();
                     },
                     success: function (resp) {
                         $('#reloadLoadingMessageId').html('Upload successful. Loading...');
