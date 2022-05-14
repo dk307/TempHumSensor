@@ -2724,7 +2724,7 @@ int homekit_server_on_url(http_parser *parser, const char *data, size_t length) 
 
 	context->endpoint = HOMEKIT_ENDPOINT_UNKNOWN;
 	if (parser->method == HTTP_PARSER_METHOD_GET) {
-		if (!strncmp(data, "/accessories", length)) {
+		if (!strncmp_P(data, PSTR("/accessories"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_GET_ACCESSORIES;
 		} else {
 			static const char url[] = "/characteristics";
@@ -2741,19 +2741,19 @@ int homekit_server_on_url(http_parser *parser, const char *data, size_t length) 
 			}
 		}
 	} else if (parser->method == HTTP_PARSER_METHOD_POST) {
-		if (!strncmp(data, "/identify", length)) {
+		if (!strncmp_P(data, PSTR("/identify"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_IDENTIFY;
-		} else if (!strncmp(data, "/pair-setup", length)) {
+		} else if (!strncmp_P(data, PSTR("/pair-setup"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_PAIR_SETUP;
-		} else if (!strncmp(data, "/pair-verify", length)) {
+		} else if (!strncmp_P(data, PSTR("/pair-verify"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_PAIR_VERIFY;
-		} else if (!strncmp(data, "/pairings", length)) {
+		} else if (!strncmp_P(data, PSTR("/pairings"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_PAIRINGS;
-		} else if (!strncmp(data, "/resource", length)) {
+		} else if (!strncmp_P(data, PSTR("/resource"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_RESOURCE;
 		}
 	} else if (parser->method == HTTP_PARSER_METHOD_PUT) {
-		if (!strncmp(data, "/characteristics", length)) {
+		if (!strncmp_P(data, PSTR("/characteristics"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_UPDATE_CHARACTERISTICS;
 		}
 	}

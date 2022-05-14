@@ -77,7 +77,7 @@ void homeKit2::updateAccessoryName()
     accessoryName = config::instance.data.hostName;
     if (accessoryName.isEmpty())
     {
-        accessoryName = "Sensor";
+        accessoryName = F("Sensor");
     }
     updateChaValue(*config.accessories[FIRST_ACCESSORY]->services[INFO_SERVICE]->characteristics[NAME_CHA], accessoryName.c_str());
 }
