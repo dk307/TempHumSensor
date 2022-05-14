@@ -73,5 +73,5 @@ private:
     AsyncWebServer httpServer{80};
     AsyncEventSource events{"/events"};
     AsyncEventSource logging{"/logs"};
-    std::vector<uint8_t> restoreConfigData;
+    std::unique_ptr<std::vector<uint8_t>> restoreConfigData;
 };

@@ -19,7 +19,6 @@ void hardware::begin()
     config::instance.addConfigSaveCallback(ftn);
     WifiManager::instance.addConfigSaveCallback(ftn);
 
-
     Wire.begin(SDAWire, SCLWire);
 
     if (!display.begin(SSD1306_SWITCHCAPVCC, ScreenAddress))
@@ -27,7 +26,9 @@ void hardware::begin()
         LOG_ERROR(F("SSD1306 allocation failed"));
     }
 
-    tempHumSensor.begin(SHT31Address);
+    if (!tempHumSensor.begin(SHT31Address)) {
+        LOG_ERROR(F("Fail to start Temp/Hum Sensor"));
+    }
 
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE); // Draw white text
@@ -138,7 +139,7 @@ void hardware::updateDisplay()
         {
             display.setTextSize(2);
             const auto displayTemperature = config::instance.data.showDisplayInF ? temperature * 9 / 5 + 32 : temperature;
-            const auto displayTemperatureUnit = config::instance.data.showDisplayInF ? F("\xB0 F") : F("\xB0 C");
+            const auto displayTemperatureUnit = config::instance.data.showDisplayInF ? F(" F") : F(" C");
             display2Lines(String(displayTemperature, 1) + displayTemperatureUnit, String(humidity, 0) + F(" %"));
         }
         else

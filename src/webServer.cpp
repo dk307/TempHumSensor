@@ -47,7 +47,7 @@ const static StaticFilesMap staticFilesMap[] PROGMEM = {
 	{IndexUrl, index_html_gz, index_html_gz_len, HtmlMediaType, true},
 	{LoginUrl, login_html_gz, login_html_gz_len, HtmlMediaType, true},
 	{LogoUrl, logo_png, logo_png_len, PngMediaType, false},
-	{FaviconUrl, favicon_png, favicon_png_len, PngMediaType, false},
+	{FaviconUrl, logo_png, logo_png_len, PngMediaType, false},
 	{AllJsUrl, s_js_gz, s_js_gz_len, JsMediaType, true},
 	{MdbCssUrl, mdb_min_css_gz, mdb_min_css_gz_len, CssMediaType, true},
 };
@@ -701,12 +701,12 @@ void WebServer::restoreConfigurationUpload(AsyncWebServerRequest *request,
 	String error;
 	if (!index)
 	{
-		WebServer::instance.restoreConfigData.clear();
+		WebServer::instance.restoreConfigData = std::make_unique<std::vector<uint8_t>>();
 	}
 
 	for (size_t i = 0; i < len; i++)
 	{
-		WebServer::instance.restoreConfigData.push_back(data[i]);
+		WebServer::instance.restoreConfigData->push_back(data[i]);
 	}
 
 	if (final)
@@ -725,7 +725,7 @@ void WebServer::restoreConfigurationUpload(AsyncWebServerRequest *request,
 			return;
 		}
 
-		if (!config::instance.restoreAllConfigAsJson(WebServer::instance.restoreConfigData, md5))
+		if (!config::instance.restoreAllConfigAsJson(*WebServer::instance.restoreConfigData, md5))
 		{
 			handleError(request, F("Restore Failed"), 500);
 			return;
