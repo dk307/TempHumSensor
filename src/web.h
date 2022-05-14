@@ -1,6 +1,5 @@
 #pragma once
 
-#include "web/include/favicon.png.h"
 #include "web/include/index.html.gz.h"
 #include "web/include/login.html.gz.h"
 #include "web/include/logo.png.h"

@@ -16,6 +16,7 @@ void hardware::begin()
         LOG_DEBUG(F("Display refresh needed"));
         refreshDisplay = true;
     };
+
     config::instance.addConfigSaveCallback(ftn);
     WifiManager::instance.addConfigSaveCallback(ftn);
 
@@ -26,7 +27,8 @@ void hardware::begin()
         LOG_ERROR(F("SSD1306 allocation failed"));
     }
 
-    if (!tempHumSensor.begin(SHT31Address)) {
+    if (!tempHumSensor.begin(SHT31Address))
+    {
         LOG_ERROR(F("Fail to start Temp/Hum Sensor"));
     }
 
@@ -128,7 +130,11 @@ void hardware::invertPixels()
 
 void hardware::updateDisplay()
 {
-    if (WifiManager::instance.isCaptivePortal())
+    if (!externalLine1.isEmpty() || !externalLine2.isEmpty())
+    {
+        display2Lines(externalLine1, externalLine2);
+    }
+    else if (WifiManager::instance.isCaptivePortal())
     {
         display.setTextSize(1);
         display2Lines(F("AP Mode"), WifiManager::instance.getAPForCaptiveMode());
@@ -150,4 +156,11 @@ void hardware::updateDisplay()
     }
 
     display.display();
+}
+
+void hardware::showExternalMessages(const String &line1, const String &line2)
+{
+    externalLine1 = line1;
+    externalLine2 = line2;
+    refreshDisplay = true;
 }

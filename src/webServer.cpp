@@ -224,7 +224,7 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 	addKeyValueObject(arr, F("Mac Address"), WiFi.softAPmacAddress());
 
 	addKeyValueObject(arr, F("Reset Reason"), ESP.getResetReason());
-	addKeyValueObject(arr, F("CPU Frequency (MHz)"), ESP.getCpuFreqMHz());
+	addKeyValueObject(arr, F("CPU Frequency (MHz)"), system_get_cpu_freq());
 
 	addKeyValueObject(arr, F("Max Block Free Size (KB)"), maxFreeHeapSize);
 	addKeyValueObject(arr, F("Free Heap (KB)"), freeHeap);
@@ -462,6 +462,7 @@ void WebServer::restartDevice(AsyncWebServerRequest *request)
 	}
 
 	request->send(200);
+	hardware::instance.showExternalMessages(F("Restarting"), String());
 	operations::instance.reboot();
 }
 
@@ -475,6 +476,7 @@ void WebServer::factoryReset(AsyncWebServerRequest *request)
 	}
 
 	request->send(200);
+	hardware::instance.showExternalMessages(F("Factory"), F("Reset"));
 	operations::instance.factoryReset();
 }
 
@@ -488,6 +490,7 @@ void WebServer::rebootOnUploadComplete(AsyncWebServerRequest *request)
 	}
 
 	request->send(200);
+	hardware::instance.showExternalMessages(F("Rebooting"), String());
 	operations::instance.reboot();
 }
 
@@ -503,6 +506,7 @@ void WebServer::homekitReset(AsyncWebServerRequest *request)
 	config::instance.data.homeKitPairData.resize(0);
 	config::instance.save();
 	request->send(200);
+	hardware::instance.showExternalMessages(F("Rebooting"), String());
 	operations::instance.reboot();
 }
 
@@ -657,6 +661,7 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 
 		if (operations::instance.startUpdate(request->contentLength(), md5, error))
 		{
+			hardware::instance.showExternalMessages(F("Updating"), String());
 			// success, let's make sure we end the update if the client hangs up
 			request->onDisconnect(handleEarlyUpdateDisconnect);
 		}
@@ -769,7 +774,7 @@ void WebServer::notifyHumidityChange()
 
 bool WebServer::sendLogs(const String &data)
 {
-	//Serial.println(data);
+	// Serial.println(data);
 	if (logging.count() > 0)
 	{
 		logging.send(data.c_str(), "logs", millis());

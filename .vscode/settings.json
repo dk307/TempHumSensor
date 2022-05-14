@@ -54,6 +54,7 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "homekit.h": "c",
-        "*.tpp": "cpp"
+        "*.tpp": "cpp",
+        "user_interface.h": "c"
     }
 }

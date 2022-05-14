@@ -25,6 +25,8 @@ public:
         return humidity;
     }
 
+    void showExternalMessages(const String& line1, const String& line2);
+
     static hardware instance;
 
     changeCallBack temperatureChangeCallback;
@@ -48,6 +50,9 @@ private:
 
     bool refreshDisplay{false};
     bool updateTempNow{true};
+
+    String externalLine1;
+    String externalLine2;
 
     bool dhtUpdate();
     void updateDisplay();
