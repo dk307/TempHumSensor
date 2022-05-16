@@ -156,12 +156,10 @@ void hardware::updateDisplay()
     {
         if (!isnan(humidity))
         {
-            display.setTextSize(2);
             display2Lines("Humidity", String(humidity, 0) + F(" %"), true, false);
         }
         else
         {
-            display.setTextSize(1);
             display2Lines(F("Listening at"), WifiManager::LocalIP().toString(), true, true);
         }
     }

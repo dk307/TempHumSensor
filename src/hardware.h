@@ -43,7 +43,6 @@ private:
     bool refreshDisplay{false};
     bool updateTempNow{true};
     
-
     String externalLine1;
     String externalLine2;
 

@@ -51,14 +51,14 @@ homekit_characteristic_t chaSensorRefershInterval = HOMEKIT_CHARACTERISTIC_(CUST
 homekit_accessory_t *accessories[] = {
     HOMEKIT_ACCESSORY(.id=1, .category=homekit_accessory_category_sensor, .services=(homekit_service_t*[]) {
         HOMEKIT_SERVICE(ACCESSORY_INFORMATION, .id=1, .characteristics=(homekit_characteristic_t*[]) {
-            HOMEKIT_CHARACTERISTIC(NAME, "Sensor", .id=100),
+            HOMEKIT_CHARACTERISTIC(NAME, "Humidity Sensor", .id=100),
             HOMEKIT_CHARACTERISTIC(MODEL, "Humidity Sensor", .id=101),
             HOMEKIT_CHARACTERISTIC(SERIAL_NUMBER, NULL, .id=102),
             HOMEKIT_CHARACTERISTIC(FIRMWARE_REVISION, XSTRINFGY(VERSION), .id=103),
             NULL
         }),
 		
-        HOMEKIT_SERVICE(HUMIDITY_SENSOR, .id=3, .characteristics=(homekit_characteristic_t*[]) {
+        HOMEKIT_SERVICE(HUMIDITY_SENSOR, .id=3, .primary=true, .characteristics=(homekit_characteristic_t*[]) {
             &chaHumidity,
             NULL
         }),
