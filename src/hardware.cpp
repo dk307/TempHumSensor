@@ -29,8 +29,10 @@ void hardware::begin()
 
     if (!tempHumSensor.begin(SHT31Address))
     {
-        LOG_ERROR(F("Fail to start Temp/Hum Sensor"));
+        LOG_ERROR(F("Failed to start SHT31 Sensor"));
     }
+
+    tempHumSensor.heater(true);
 
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE); // Draw white text
@@ -52,7 +54,7 @@ float hardware::roundPlaces(float val, int places)
 
 void hardware::loop()
 {
-    const bool changed = dhtUpdate();
+    const bool changed = sensorUpdate();
     if (changed || refreshDisplay)
     {
         refreshDisplay = false;
@@ -60,26 +62,17 @@ void hardware::loop()
     }
 }
 
-bool hardware::dhtUpdate()
+bool hardware::sensorUpdate()
 {
     bool changed = false;
     const auto now = millis();
     if ((now - lastRead > config::instance.data.sensorsRefreshInterval) || updateTempNow)
     {
-        const auto temp = roundPlaces(tempHumSensor.readTemperature(), 1);
-        const auto hum = roundPlaces(tempHumSensor.readHumidity(), 0);
-
-        if (temperature != temp)
-        {
-            LOG_DEBUG(F("Temp: ") << temp);
-            temperature = temp;
-            changed = true;
-            temperatureChangeCallback.callChangeListeners();
-        }
+        float hum = tempHumSensor.readHumidity();
+        hum = roundPlaces(hum, 0);
 
         if (humidity != hum)
         {
-
             LOG_DEBUG(F("Hum: ") << hum);
             humidity = hum;
             changed = true;
@@ -89,27 +82,46 @@ bool hardware::dhtUpdate()
         updateTempNow = false;
     }
 
+    if (now - heaterTimeSwitch > 10000)
+    {
+        tempHumSensor.heater(!tempHumSensor.isHeaterEnabled());
+        heaterTimeSwitch = now;
+    }
+
     return changed;
 }
 
-void hardware::display2Lines(const String &first, const String &second)
+void hardware::display2Lines(const String &first, const String &second, bool firstSmall, bool secondSmall)
 {
     display.clearDisplay();
+
+    const auto height = 64;
+    const auto firstLineHeight = firstSmall ? height / 3 : height / 2;
+
     // get text bounds to make text middle justify
     int16_t x1;
     int16_t y1;
     uint16_t w;
     uint16_t h;
 
-    display.getTextBounds(first, 0, 23, &x1, &y1, &w, &h);
-    display.setCursor((display.width() - w) / 2, 23);
-    display.write(first.c_str());
+    if (!first.isEmpty())
+    {
+        display.setTextSize(firstSmall ? 1 : 2);
+        display.getTextBounds(first, 0, firstLineHeight, &x1, &y1, &w, &h);
+        display.setCursor((display.width() - w) / 2, firstLineHeight - (firstLineHeight - h) / 2);
+        display.write(first.c_str());
+    }
 
-    display.getTextBounds(second, 0, h + 10 + 23, &x1, &y1, &w, &h);
-    display.setCursor((display.width() - w) / 2, h + 10 + 23);
-    display.print(second.c_str());
+    if (!second.isEmpty())
+    {
+        const auto secondLineHeight = height - firstLineHeight;
+        display.setTextSize(secondSmall ? 1 : 2);
+        display.getTextBounds(second, 0, secondLineHeight, &x1, &y1, &w, &h);
+        display.setCursor((display.width() - w) / 2, height - (secondLineHeight - h) / 2);
+        display.write(second.c_str());
+    }
 
-    if (random(10) == 1) // 1 in 10 screen saver
+    if (random(15) == 1) // 1 in 15 screen saver
     {
         invertPixels();
     }
@@ -132,26 +144,25 @@ void hardware::updateDisplay()
 {
     if (!externalLine1.isEmpty() || !externalLine2.isEmpty())
     {
-        display2Lines(externalLine1, externalLine2);
+        const bool small = !externalLine2.isEmpty();
+        display2Lines(externalLine1, externalLine2, small, small);
     }
     else if (WifiManager::instance.isCaptivePortal())
     {
         display.setTextSize(1);
-        display2Lines(F("AP Mode"), WifiManager::instance.getAPForCaptiveMode());
+        display2Lines(F("AP Mode"), WifiManager::instance.getAPForCaptiveMode(), true, true);
     }
     else
     {
-        if (!isnan(temperature) && !isnan(humidity))
+        if (!isnan(humidity))
         {
             display.setTextSize(2);
-            const auto displayTemperature = config::instance.data.showDisplayInF ? temperature * 9 / 5 + 32 : temperature;
-            const auto displayTemperatureUnit = config::instance.data.showDisplayInF ? F(" F") : F(" C");
-            display2Lines(String(displayTemperature, 1) + displayTemperatureUnit, String(humidity, 0) + F(" %"));
+            display2Lines("Humidity", String(humidity, 0) + F(" %"), true, false);
         }
         else
         {
             display.setTextSize(1);
-            display2Lines(F("Listening at"), WifiManager::LocalIP().toString());
+            display2Lines(F("Listening at"), WifiManager::LocalIP().toString(), true, true);
         }
     }
 

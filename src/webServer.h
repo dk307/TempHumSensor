@@ -66,7 +66,6 @@ private:
     static void addKeyValueObject(Array &array, const K &key, const T &value);
     template <class V, class T>
     static void addToJsonDoc(V &doc, T id, float value);
-    void notifyTemperatureChange();
     void notifyHumidityChange();
     bool sendLogs(const String& data);
 

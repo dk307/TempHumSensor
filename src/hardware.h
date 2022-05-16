@@ -15,11 +15,6 @@ public:
     void begin();
     void loop();
 
-    float getTemperatureC() const
-    {
-        return temperature;
-    }
-
     float getHumidity() const
     {
         return humidity;
@@ -28,19 +23,16 @@ public:
     void showExternalMessages(const String& line1, const String& line2);
 
     static hardware instance;
-
-    changeCallBack temperatureChangeCallback;
     changeCallBack humidityChangeCallback;
 
 private:
-    // DHT
-    float temperature{NAN};
     float humidity{NAN};
 
     // SHT31
     const int SHT31Address = 0x44;
     Adafruit_SHT31  tempHumSensor;
     uint64_t lastRead{0};
+    uint64_t heaterTimeSwitch{0};
 
     // SSD1306
     const int ScreenAddress = 0x3C;
@@ -50,13 +42,14 @@ private:
 
     bool refreshDisplay{false};
     bool updateTempNow{true};
+    
 
     String externalLine1;
     String externalLine2;
 
-    bool dhtUpdate();
+    bool sensorUpdate();
     void updateDisplay();
-    void display2Lines(const String &first, const String &second);
+    void display2Lines(const String &first, const String &second, bool firstSmall, bool secondSmall);
     static float roundPlaces(float val, int places);
     void invertPixels();
 };

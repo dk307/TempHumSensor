@@ -68,7 +68,6 @@ void WebServer::begin()
 	serverRouting();
 	LOG_INFO(F("WebServer Started"));
 
-	hardware::instance.temperatureChangeCallback.addConfigSaveCallback(std::bind(&WebServer::notifyTemperatureChange, this));
 	hardware::instance.humidityChangeCallback.addConfigSaveCallback(std::bind(&WebServer::notifyHumidityChange, this));
 }
 
@@ -130,7 +129,6 @@ void WebServer::onEventConnect(AsyncEventSourceClient *client)
 	{
 		LOG_INFO(F("Events client first time"));
 		// send all the events
-		notifyTemperatureChange();
 		notifyHumidityChange();
 	}
 }
@@ -297,8 +295,6 @@ void WebServer::sensorGet(AsyncWebServerRequest *request)
 	auto doc = response->getRoot();
 
 	addToJsonDoc(doc, F("humidity"), hardware::instance.getHumidity());
-	addToJsonDoc(doc, F("temperatureC"), hardware::instance.getTemperatureC());
-
 	response->setLength();
 	request->send(response);
 }
@@ -420,7 +416,6 @@ void WebServer::otherSettingsUpdate(AsyncWebServerRequest *request)
 {
 	const auto hostName = F("hostName");
 	const auto sensorsRefreshInterval = F("sensorsRefreshInterval");
-	const auto showDisplayInF = F("showDisplayInF");
 
 	LOG_INFO(F("config Update"));
 
@@ -437,15 +432,6 @@ void WebServer::otherSettingsUpdate(AsyncWebServerRequest *request)
 	if (request->hasArg(sensorsRefreshInterval))
 	{
 		config::instance.data.sensorsRefreshInterval = request->arg(sensorsRefreshInterval).toInt() * 1000;
-	}
-
-	if (request->hasArg(showDisplayInF))
-	{
-		config::instance.data.showDisplayInF = !request->arg(showDisplayInF).equalsIgnoreCase(F("on"));
-	}
-	else
-	{
-		config::instance.data.showDisplayInF = false;
 	}
 
 	config::instance.save();
@@ -754,14 +740,6 @@ void WebServer::handleError(AsyncWebServerRequest *request, const String &messag
 void WebServer::handleEarlyUpdateDisconnect()
 {
 	operations::instance.abortUpdate();
-}
-
-void WebServer::notifyTemperatureChange()
-{
-	if (events.count())
-	{
-		events.send(String(hardware::instance.getTemperatureC()).c_str(), "temperature", millis());
-	}
 }
 
 void WebServer::notifyHumidityChange()

@@ -18,7 +18,6 @@ struct configData
     String webPassword;
     std::vector<uint8_t> homeKitPairData;
     uint64_t sensorsRefreshInterval;
-    bool showDisplayInF;
 
     configData()
     {
@@ -33,7 +32,6 @@ struct configData
         webPassword = defaultUserIDPassword;
         homeKitPairData.resize(0);
         sensorsRefreshInterval = 5 * 1000;
-        showDisplayInF = false;
     }
 };
 
