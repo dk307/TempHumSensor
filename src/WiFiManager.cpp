@@ -37,6 +37,8 @@ void WifiManager::begin()
         // connected
         LOG_INFO(F("Connected to stored WiFi details with IP: ") << WiFi.localIP());
         WiFi.setHostname(rfcName.c_str());
+        WiFi.setAutoReconnect(true);
+        WiFi.persistent(true);
     }
     else
     {
@@ -122,6 +124,10 @@ void WifiManager::connectNewWifi(const String &newSSID, const String &newPass)
                 else
                 {
                     LOG_INFO(F("Reconnection successful") << WiFi.localIP());
+                    LOG_INFO(F("Connected to new WiFi details with IP: ") << WiFi.localIP());
+                    WiFi.setHostname(rfcName.c_str());
+                    WiFi.setAutoReconnect(true);
+                    WiFi.persistent(true);
                 }
             }
         }
@@ -202,7 +208,6 @@ void WifiManager::loop()
 
     if (reconnect)
     {
-
         connectNewWifi(ssid, pass);
         reconnect = false;
     }

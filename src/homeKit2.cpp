@@ -31,6 +31,8 @@ void homeKit2::begin()
 
     serialNumber = String(ESP.getChipId(), HEX);
     serialNumber.toUpperCase();
+    localIP = WifiManager::instance.LocalIP().toString();
+    rssi = WifiManager::instance.RSSI();
 
     config::instance.addConfigSaveCallback(std::bind(&homeKit2::onConfigChange, this));
     hardware::instance.humidityChangeCallback.addConfigSaveCallback(std::bind(&homeKit2::notifyHumidityChange, this));
@@ -42,9 +44,6 @@ void homeKit2::begin()
     notifyHumidityChange();
     notifySensorRefreshIntervalChange();
     updateAccessoryName();
-
-    localIP = WifiManager::instance.LocalIP().toString();
-    rssi = WifiManager::instance.RSSI();
 
     arduino_homekit_setup(&config);
 
@@ -78,7 +77,6 @@ void homeKit2::updateAccessoryName()
     }
     updateChaValue(*config.accessories[FIRST_ACCESSORY]->services[INFO_SERVICE]->characteristics[NAME_CHA], accessoryName.c_str());
 }
- 
 
 void homeKit2::notifyHumidityChange()
 {

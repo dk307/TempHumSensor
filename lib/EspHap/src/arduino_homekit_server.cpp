@@ -33,7 +33,7 @@
 #define HOMEKIT_MAX_CLIENTS      8
 #define HOMEKIT_MDNS_SERVICE     "hap"//"_hap"
 #define HOMEKIT_MDNS_PROTO       "tcp"//"_tcp"
-#define HOMEKIT_EVENT_QUEUE_SIZE 4 //original is 20
+#define HOMEKIT_EVENT_QUEUE_SIZE 8 //original is 20
 #define HOMEKIT_SOCKET_TIMEOUT   500 //milliseconds
 
 //#define TCP_DEFAULT_KEEPALIVE_IDLE_SEC          7200 // 2 hours
@@ -3334,6 +3334,8 @@ void homekit_server_init(homekit_server_config_t *config) {
 		}
 	}
 
+	homekit_overclock_start();
+
 	homekit_accessories_init(config->accessories);
 	if (!config->config_number) {
 		config->config_number = config->accessories[0]->config_number;
@@ -3398,6 +3400,8 @@ void homekit_server_init(homekit_server_config_t *config) {
 	homekit_mdns_init(server);
 	HOMEKIT_NOTIFY_EVENT(server, HOMEKIT_EVENT_SERVER_INITIALIZED);
 	homekit_server_process(server);
+
+	homekit_overclock_end();
 
 	INFO("Init server over");
 }

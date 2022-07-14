@@ -84,7 +84,13 @@ bool hardware::sensorUpdate()
 
     if (now - heaterTimeSwitch > 10000)
     {
-        tempHumSensor.heater(!tempHumSensor.isHeaterEnabled());
+        bool newHeaterState;
+        if (humidity >= 60)
+        {
+            newHeaterState = true;
+        }
+
+        tempHumSensor.heater(newHeaterState);
         heaterTimeSwitch = now;
     }
 
@@ -121,7 +127,7 @@ void hardware::display2Lines(const String &first, const String &second, bool fir
         display.write(second.c_str());
     }
 
-    if (random(15) == 1) // 1 in 15 screen saver
+    if (random(30) == 1) // 1 in 30 screen saver
     {
         invertPixels();
     }
@@ -156,7 +162,7 @@ void hardware::updateDisplay()
     {
         if (!isnan(humidity))
         {
-            display2Lines("Humidity", String(humidity, 0) + F(" %"), true, false);
+            display2Lines(F("Humidity"), String(humidity, 0) + F(" %"), true, false);
         }
         else
         {
