@@ -1,4 +1,6 @@
 #include <stdarg.h>
+#include "user_interface.h"
+
 
 #ifdef ESP_OPEN_RTOS
 
@@ -100,12 +102,13 @@ void homekit_system_restart() {
 }
 
 void homekit_overclock_start() {
-	//ets_update_cpu_frequency(ticks_per_us);
+	system_update_cpu_freq(SYS_CPU_160MHZ);
 }
 
 void homekit_overclock_end() {
-	//ets_update_cpu_frequency(ticks_per_us);
+    system_update_cpu_freq(SYS_CPU_80MHZ);
 }
+
 /*
 void homekit_mdns_init() {
     mdns_init();

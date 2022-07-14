@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Adafruit_Sensor.h>
-#include <DHT.h>
+#include <Adafruit_SHT31.h>
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -15,29 +15,24 @@ public:
     void begin();
     void loop();
 
-    float getTemperatureC() const
-    {
-        return temperature;
-    }
-
     float getHumidity() const
     {
         return humidity;
     }
 
-    static hardware instance;
+    void showExternalMessages(const String& line1, const String& line2);
 
-    changeCallBack temperatureChangeCallback;
+    static hardware instance;
     changeCallBack humidityChangeCallback;
 
 private:
-    // DHT
-    float temperature{NAN};
     float humidity{NAN};
-    const uint8_t DhtPin = 13;
-    const uint8_t DhtType = DHT22; // DHT 22 (AM2302)
-    DHT dht{DhtPin, DhtType};
+
+    // SHT31
+    const int SHT31Address = 0x44;
+    Adafruit_SHT31  tempHumSensor;
     uint64_t lastRead{0};
+    uint64_t heaterTimeSwitch{0};
 
     // SSD1306
     const int ScreenAddress = 0x3C;
@@ -47,10 +42,13 @@ private:
 
     bool refreshDisplay{false};
     bool updateTempNow{true};
+    
+    String externalLine1;
+    String externalLine2;
 
-    bool dhtUpdate();
+    bool sensorUpdate();
     void updateDisplay();
-    void display2Lines(const String &first, const String &second);
+    void display2Lines(const String &first, const String &second, bool firstSmall, bool secondSmall);
     static float roundPlaces(float val, int places);
     void invertPixels();
 };

@@ -9,7 +9,7 @@ extern "C" {
 #include <stdio.h>
 #include "Arduino.h"
 #include <string.h>
-#include <esp_xpgm.h>
+#include <logprintf.h>
 
 typedef unsigned char byte;
 
@@ -22,7 +22,7 @@ typedef unsigned char byte;
 #define HOMEKIT_LOG_LEVEL HOMEKIT_LOG_INFO
 #endif
 
-#define HOMEKIT_PRINTF XPGM_PRINTF
+#define HOMEKIT_PRINTF CUSTOM_PRINTF
 
 
 #if HOMEKIT_LOG_LEVEL >= HOMEKIT_LOG_DEBUG

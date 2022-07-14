@@ -33,7 +33,7 @@
 #define HOMEKIT_MAX_CLIENTS      8
 #define HOMEKIT_MDNS_SERVICE     "hap"//"_hap"
 #define HOMEKIT_MDNS_PROTO       "tcp"//"_tcp"
-#define HOMEKIT_EVENT_QUEUE_SIZE 4 //original is 20
+#define HOMEKIT_EVENT_QUEUE_SIZE 8 //original is 20
 #define HOMEKIT_SOCKET_TIMEOUT   500 //milliseconds
 
 //#define TCP_DEFAULT_KEEPALIVE_IDLE_SEC          7200 // 2 hours
@@ -2724,7 +2724,7 @@ int homekit_server_on_url(http_parser *parser, const char *data, size_t length) 
 
 	context->endpoint = HOMEKIT_ENDPOINT_UNKNOWN;
 	if (parser->method == HTTP_PARSER_METHOD_GET) {
-		if (!strncmp(data, "/accessories", length)) {
+		if (!strncmp_P(data, PSTR("/accessories"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_GET_ACCESSORIES;
 		} else {
 			static const char url[] = "/characteristics";
@@ -2741,19 +2741,19 @@ int homekit_server_on_url(http_parser *parser, const char *data, size_t length) 
 			}
 		}
 	} else if (parser->method == HTTP_PARSER_METHOD_POST) {
-		if (!strncmp(data, "/identify", length)) {
+		if (!strncmp_P(data, PSTR("/identify"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_IDENTIFY;
-		} else if (!strncmp(data, "/pair-setup", length)) {
+		} else if (!strncmp_P(data, PSTR("/pair-setup"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_PAIR_SETUP;
-		} else if (!strncmp(data, "/pair-verify", length)) {
+		} else if (!strncmp_P(data, PSTR("/pair-verify"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_PAIR_VERIFY;
-		} else if (!strncmp(data, "/pairings", length)) {
+		} else if (!strncmp_P(data, PSTR("/pairings"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_PAIRINGS;
-		} else if (!strncmp(data, "/resource", length)) {
+		} else if (!strncmp_P(data, PSTR("/resource"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_RESOURCE;
 		}
 	} else if (parser->method == HTTP_PARSER_METHOD_PUT) {
-		if (!strncmp(data, "/characteristics", length)) {
+		if (!strncmp_P(data, PSTR("/characteristics"), length)) {
 			context->endpoint = HOMEKIT_ENDPOINT_UPDATE_CHARACTERISTICS;
 		}
 	}
@@ -3334,6 +3334,8 @@ void homekit_server_init(homekit_server_config_t *config) {
 		}
 	}
 
+	homekit_overclock_start();
+
 	homekit_accessories_init(config->accessories);
 	if (!config->config_number) {
 		config->config_number = config->accessories[0]->config_number;
@@ -3398,6 +3400,8 @@ void homekit_server_init(homekit_server_config_t *config) {
 	homekit_mdns_init(server);
 	HOMEKIT_NOTIFY_EVENT(server, HOMEKIT_EVENT_SERVER_INITIALIZED);
 	homekit_server_process(server);
+
+	homekit_overclock_end();
 
 	INFO("Init server over");
 }
@@ -3561,10 +3565,6 @@ bool arduino_homekit_preinit(homekit_server_t *server) {
 }
 
 void arduino_homekit_setup(homekit_server_config_t *config) {
-	if (system_get_cpu_freq() != SYS_CPU_160MHZ) {
-		system_update_cpu_freq(SYS_CPU_160MHZ);
-		INFO("Update the CPU to run at 160MHz");
-	}
 
 	homekit_server_init(config);
 	// The MDNS needs to be restarted when WiFi is connected to confirm the

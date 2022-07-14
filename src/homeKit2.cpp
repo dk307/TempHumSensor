@@ -31,28 +31,24 @@ void homeKit2::begin()
 
     serialNumber = String(ESP.getChipId(), HEX);
     serialNumber.toUpperCase();
+    localIP = WifiManager::instance.LocalIP().toString();
+    rssi = WifiManager::instance.RSSI();
 
     config::instance.addConfigSaveCallback(std::bind(&homeKit2::onConfigChange, this));
-    hardware::instance.temperatureChangeCallback.addConfigSaveCallback(std::bind(&homeKit2::notifyTemperatureChange, this));
     hardware::instance.humidityChangeCallback.addConfigSaveCallback(std::bind(&homeKit2::notifyHumidityChange, this));
     chaSensorRefershInterval.setter = onSensorRefreshIntervalChange;
 
     updateChaValue(*config.accessories[FIRST_ACCESSORY]->services[INFO_SERVICE]->characteristics[SERIAL_NUMBER_CHA], serialNumber.c_str());
     notifyIPAddressChange();
     notifyWifiRssiChange();
-    notifyTemperatureChange();
     notifyHumidityChange();
     notifySensorRefreshIntervalChange();
     updateAccessoryName();
-
-    localIP = WifiManager::instance.LocalIP().toString();
-    rssi = WifiManager::instance.RSSI();
 
     arduino_homekit_setup(&config);
 
     LOG_INFO(F("HomeKit Server Running"));
 
-    notifyTemperatureChange();
     notifyHumidityChange();
     notifySensorRefreshIntervalChange();
     notifyIPAddressChange();
@@ -77,15 +73,9 @@ void homeKit2::updateAccessoryName()
     accessoryName = config::instance.data.hostName;
     if (accessoryName.isEmpty())
     {
-        accessoryName = "Sensor";
+        accessoryName = F("Sensor");
     }
     updateChaValue(*config.accessories[FIRST_ACCESSORY]->services[INFO_SERVICE]->characteristics[NAME_CHA], accessoryName.c_str());
-}
-
-void homeKit2::notifyTemperatureChange()
-{
-    updateChaValue(chaCurrentTemperature, hardware::instance.getTemperatureC());
-    homekit_characteristic_notify(&chaCurrentTemperature, chaCurrentTemperature.value);
 }
 
 void homeKit2::notifyHumidityChange()
