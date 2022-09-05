@@ -221,7 +221,7 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 	addKeyValueObject(arr, F("AP Signal Strength"), WiFi.RSSI());
 	addKeyValueObject(arr, F("Mac Address"), WiFi.softAPmacAddress());
 
-	addKeyValueObject(arr, F("Reset Reason"), ESP.getResetReason());
+	addKeyValueObject(arr, F("Reset Info"), ESP.getResetInfo());
 	addKeyValueObject(arr, F("CPU Frequency (MHz)"), system_get_cpu_freq());
 
 	addKeyValueObject(arr, F("Max Block Free Size (KB)"), maxFreeHeapSize);
