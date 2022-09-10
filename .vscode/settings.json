@@ -53,6 +53,13 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "homekit.h": "c"
+        "homekit.h": "c",
+        "*.tpp": "cpp",
+        "user_interface.h": "c",
+        "hmac.h": "c",
+        "ssl.h": "c",
+        "error-crypt.h": "c",
+        "wolfssl.h": "c",
+        "curve25519.h": "c"
     }
 }

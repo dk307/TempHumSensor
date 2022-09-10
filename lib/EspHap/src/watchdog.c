@@ -5,7 +5,7 @@
  * Changed:
  * 2017 Alexander Epstine (a@epstine.com)
  */
-
+#if defined(ARDUINO) && defined(ESP8266)
 #include "watchdog.h"
 #include "Arduino.h"
 #include "stdint.h"
@@ -30,6 +30,7 @@ void esp_hw_wdt_feed() {
 	WRITE_PERI_REG(WDT_RESET, WDT_RESET_VALUE);
 }
 
+
 void watchdog_disable_all() {
 	system_soft_wdt_stop();
 	esp_hw_wdt_disable();
@@ -40,8 +41,6 @@ void watchdog_enable_all() {
 	system_soft_wdt_restart();
 }
 
-#ifdef HOMEKIT_DEBUG
-
 static uint32_t wdt_checkpoint;
 
 void watchdog_check_begin() {
@@ -50,14 +49,6 @@ void watchdog_check_begin() {
 
 void watchdog_check_end(const char *message) {
 	uint32_t d = millis() - wdt_checkpoint;
-	printf("[WatchDog] Function %s took: %dms\n", message, d);
+	//printf("=== %s took: %dms\n", message, d);
 }
-
-#else
-
-void watchdog_check_begin() {
-}
-void watchdog_check_end(const char *message) {
-}
-
 #endif

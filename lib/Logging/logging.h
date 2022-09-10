@@ -1,12 +1,36 @@
 #pragma once
 
 #include <Print.h>
+#include <functional>
 
 #ifndef LOG_FORMAT
-#define LOG_FORMAT 3
+#define LOG_FORMAT 2
 #endif
 
-// Streaming operator for serial print use.
+class CustomLogger : public Print
+{
+public:
+    CustomLogger();
+    typedef std::function<bool(const String &value)> RecvMsgHandler;
+
+    using Print::write;
+    size_t write(uint8_t value) override;
+
+    void setMsgCallback(RecvMsgHandler callback)
+    {
+        this->callback = callback;
+    }
+
+    bool hasListener() const { return loggingEnabled; }
+    void enableLogging() { loggingEnabled = true; }
+
+private:
+    RecvMsgHandler callback;
+    String current;
+    bool loggingEnabled{true};
+};
+
+extern CustomLogger Logger;
 
 template <class T>
 inline Print &operator<<(Print &obj, T &&arg)
@@ -16,22 +40,19 @@ inline Print &operator<<(Print &obj, T &&arg)
 }
 
 static const char endl[] PROGMEM = "\r\n";
-static const char errorPrefix[] PROGMEM = "ERROR [";
-static const char warnPrefix[] PROGMEM = "WARN  [";
-static const char infoPrefix[] PROGMEM = "INFO  [";
-static const char debugPrefix[] PROGMEM = "DEBUG [";
-static const char tracePrefix[] PROGMEM = "TRACE [";
+
 static const char logSeperator1[] PROGMEM = "[";
 static const char logSeperator2[] PROGMEM = "]";
 static const char logSeperator3[] PROGMEM = "] : ";
 
 #if LOG_FORMAT >= 0
+static const char errorPrefix[] PROGMEM = " ERROR [";
 #define LOG_ERROR(content)                                                                                   \
-    do                                                                                                       \
+    if (Logger.hasListener())                                                                                \
     {                                                                                                        \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(errorPrefix) << __FILE__ \
+        Logger << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(errorPrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << FPSTR(endl);                                            \
-    } while (0)
+    }
 #else
 #define LOG_ERROR(content) \
     do                     \
@@ -40,12 +61,13 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #endif
 
 #if LOG_FORMAT >= 1
+static const char warnPrefix[] PROGMEM = " WARN  [";
 #define LOG_WARNING(content)                                                                                \
-    do                                                                                                      \
+    if (Logger.hasListener())                                                                               \
     {                                                                                                       \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(warnPrefix) << __FILE__ \
+        Logger << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(warnPrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << endl;                                                  \
-    } while (0)
+    }
 #else
 #define LOG_WARNING(svc, content) \
     do                            \
@@ -54,12 +76,13 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #endif
 
 #if LOG_FORMAT >= 2
+static const char infoPrefix[] PROGMEM = " INFO  [";
 #define LOG_INFO(content)                                                                                   \
-    do                                                                                                      \
+    if (Logger.hasListener())                                                                               \
     {                                                                                                       \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(infoPrefix) << __FILE__ \
+        Logger << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(infoPrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << endl;                                                  \
-    } while (0)
+    }
 #else
 #define LOG_INFO(content) \
     do                    \
@@ -68,12 +91,13 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #endif
 
 #if LOG_FORMAT >= 3
+static const char debugPrefix[] PROGMEM = " DEBUG [";
 #define LOG_DEBUG(content)                                                                                   \
-    do                                                                                                       \
+    if (Logger.hasListener())                                                                                \
     {                                                                                                        \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(debugPrefix) << __FILE__ \
+        Logger << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(debugPrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << endl;                                                   \
-    } while (0)
+    }
 #else
 #define LOG_DEBUG(content) \
     do                     \
@@ -82,12 +106,13 @@ static const char logSeperator3[] PROGMEM = "] : ";
 #endif
 
 #if LOG_FORMAT >= 4
+static const char tracePrefix[] PROGMEM = " TRACE [";
 #define LOG_TRACE(content)                                                                                   \
-    do                                                                                                       \
+    if (Logger.hasListener())                                                                                \
     {                                                                                                        \
-        Serial << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(tracePrefix) << __FILE__ \
+        Logger << FPSTR(logSeperator1) << millis() << FPSTR(logSeperator2) << FPSTR(tracePrefix) << __FILE__ \
                << FPSTR(logSeperator3) << content << endl;                                                   \
-    } while (0)
+    }
 #else
 #define LOG_TRACE(content) \
     do                     \

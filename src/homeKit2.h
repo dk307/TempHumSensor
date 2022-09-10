@@ -1,7 +1,7 @@
 #pragma once
 
-#include <homekit/homekit.h>
-#include <homekit/characteristics.h>
+#include <homekit.h>
+#include <characteristics.h>
 
 class homeKit2
 {
@@ -22,11 +22,9 @@ private:
     homeKit2(){};
     static void updateChaValue(homekit_characteristic_t &cha, float value);
     static void updateChaValue(homekit_characteristic_t &cha, const char* value);
-    static void updateChaValue(homekit_characteristic_t &cha, uint64_t value);
     static void updateChaValue(homekit_characteristic_t &cha, int value);
     static void updatePassword(const char *password);
 
-    void notifyTemperatureChange();
     void notifyHumidityChange();
     void notifySensorRefreshIntervalChange();
     void notifyIPAddressChange();

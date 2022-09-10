@@ -104,8 +104,8 @@ bool operations::writeUpdate(const uint8_t *data, size_t length, String &error)
 {
 	LOG_DEBUG(F("Update write with length:") << length);
 	LOG_DEBUG(F("Update stats Size:") << Update.size()
-									  << " progress:" << Update.progress()
-									  << " remaining:" << Update.remaining());
+									  << F(" progress:") << Update.progress()
+									  << F(" remaining:") << Update.remaining());
 	const auto written = Update.write(const_cast<uint8_t *>(data), length);
 	if (written == length)
 	{

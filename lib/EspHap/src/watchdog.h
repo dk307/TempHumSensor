@@ -6,13 +6,13 @@
 extern "C" {
 #endif
 
-void watchdog_disable_all();
+	void watchdog_disable_all();
 
-void watchdog_enable_all();
+	void watchdog_enable_all();
 
-void watchdog_check_begin();
+	void watchdog_check_begin();
 
-void watchdog_check_end(const char* message);
+	void watchdog_check_end(const char* message);
 
 #ifdef __cplusplus
 }

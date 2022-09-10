@@ -18,9 +18,9 @@ typedef struct
 {
 	const char *Path;
 	const unsigned char *Data;
-	const size_t Size;
+	const uint32_t Size;
 	const char *MediaType;
-	const bool Zipped;
+	const uint8_t Zipped;
 } StaticFilesMap;
 
 static const char JsonMediaType[] PROGMEM = "application/json";
@@ -43,11 +43,11 @@ static const char MD5Header[] PROGMEM = "md5";
 static const char CacheControlHeader[] PROGMEM = "Cache-Control";
 static const char CookieHeader[] PROGMEM = "Cookie";
 
-const static StaticFilesMap staticFilesMap[] = {
-	{LoginUrl, login_html_gz, login_html_gz_len, HtmlMediaType, true},
+const static StaticFilesMap staticFilesMap[] PROGMEM = {
 	{IndexUrl, index_html_gz, index_html_gz_len, HtmlMediaType, true},
+	{LoginUrl, login_html_gz, login_html_gz_len, HtmlMediaType, true},
 	{LogoUrl, logo_png, logo_png_len, PngMediaType, false},
-	{FaviconUrl, favicon_png, favicon_png_len, PngMediaType, false},
+	{FaviconUrl, logo_png, logo_png_len, PngMediaType, false},
 	{AllJsUrl, s_js_gz, s_js_gz_len, JsMediaType, true},
 	{MdbCssUrl, mdb_min_css_gz, mdb_min_css_gz_len, CssMediaType, true},
 };
@@ -57,15 +57,17 @@ WebServer WebServer::instance;
 void WebServer::begin()
 {
 	LOG_DEBUG(F("WebServer Starting"));
-
 	events.onConnect(std::bind(&WebServer::onEventConnect, this, std::placeholders::_1));
+	logging.onConnect(std::bind(&WebServer::onLoggingConnect, this, std::placeholders::_1));
 	events.setFilter(std::bind(&WebServer::filterEvents, this, std::placeholders::_1));
+	logging.setFilter(std::bind(&WebServer::filterEvents, this, std::placeholders::_1));
+	Logger.setMsgCallback(std::bind(&WebServer::sendLogs, this, std::placeholders::_1));
 	httpServer.addHandler(&events);
+	httpServer.addHandler(&logging);
 	httpServer.begin();
 	serverRouting();
 	LOG_INFO(F("WebServer Started"));
 
-	hardware::instance.temperatureChangeCallback.addConfigSaveCallback(std::bind(&WebServer::notifyTemperatureChange, this));
 	hardware::instance.humidityChangeCallback.addConfigSaveCallback(std::bind(&WebServer::notifyHumidityChange, this));
 }
 
@@ -127,9 +129,13 @@ void WebServer::onEventConnect(AsyncEventSourceClient *client)
 	{
 		LOG_INFO(F("Events client first time"));
 		// send all the events
-		notifyTemperatureChange();
 		notifyHumidityChange();
 	}
+}
+
+void WebServer::onLoggingConnect(AsyncEventSourceClient *)
+{
+	Logger.enableLogging();
 }
 
 void WebServer::wifiGet(AsyncWebServerRequest *request)
@@ -215,8 +221,8 @@ void WebServer::informationGet(AsyncWebServerRequest *request)
 	addKeyValueObject(arr, F("AP Signal Strength"), WiFi.RSSI());
 	addKeyValueObject(arr, F("Mac Address"), WiFi.softAPmacAddress());
 
-	addKeyValueObject(arr, F("Reset Reason"), ESP.getResetReason());
-	addKeyValueObject(arr, F("CPU Frequency (MHz)"), ESP.getCpuFreqMHz());
+	addKeyValueObject(arr, F("Reset Info"), ESP.getResetInfo());
+	addKeyValueObject(arr, F("CPU Frequency (MHz)"), system_get_cpu_freq());
 
 	addKeyValueObject(arr, F("Max Block Free Size (KB)"), maxFreeHeapSize);
 	addKeyValueObject(arr, F("Free Heap (KB)"), freeHeap);
@@ -289,8 +295,6 @@ void WebServer::sensorGet(AsyncWebServerRequest *request)
 	auto doc = response->getRoot();
 
 	addToJsonDoc(doc, F("humidity"), hardware::instance.getHumidity());
-	addToJsonDoc(doc, F("temperatureC"), hardware::instance.getTemperatureC());
-
 	response->setLength();
 	request->send(response);
 }
@@ -412,7 +416,6 @@ void WebServer::otherSettingsUpdate(AsyncWebServerRequest *request)
 {
 	const auto hostName = F("hostName");
 	const auto sensorsRefreshInterval = F("sensorsRefreshInterval");
-	const auto showDisplayInF = F("showDisplayInF");
 
 	LOG_INFO(F("config Update"));
 
@@ -431,15 +434,6 @@ void WebServer::otherSettingsUpdate(AsyncWebServerRequest *request)
 		config::instance.data.sensorsRefreshInterval = request->arg(sensorsRefreshInterval).toInt() * 1000;
 	}
 
-	if (request->hasArg(showDisplayInF))
-	{
-		config::instance.data.showDisplayInF = !request->arg(showDisplayInF).equalsIgnoreCase(F("on"));
-	}
-	else
-	{
-		config::instance.data.showDisplayInF = false;
-	}
-
 	config::instance.save();
 	redirectToRoot(request);
 }
@@ -454,6 +448,7 @@ void WebServer::restartDevice(AsyncWebServerRequest *request)
 	}
 
 	request->send(200);
+	hardware::instance.showExternalMessages(F("Restarting"), String());
 	operations::instance.reboot();
 }
 
@@ -467,6 +462,7 @@ void WebServer::factoryReset(AsyncWebServerRequest *request)
 	}
 
 	request->send(200);
+	hardware::instance.showExternalMessages(F("Factory"), F("Reset"));
 	operations::instance.factoryReset();
 }
 
@@ -480,6 +476,7 @@ void WebServer::rebootOnUploadComplete(AsyncWebServerRequest *request)
 	}
 
 	request->send(200);
+	hardware::instance.showExternalMessages(F("Rebooting"), String());
 	operations::instance.reboot();
 }
 
@@ -495,6 +492,7 @@ void WebServer::homekitReset(AsyncWebServerRequest *request)
 	config::instance.data.homeKitPairData.resize(0);
 	config::instance.save();
 	request->send(200);
+	hardware::instance.showExternalMessages(F("Rebooting"), String());
 	operations::instance.reboot();
 }
 
@@ -518,25 +516,30 @@ void WebServer::handleFileRead(AsyncWebServerRequest *request)
 	if (!worksWithoutAuth && !isAuthenticated(request))
 	{
 		LOG_DEBUG(F("Redirecting to login page"));
-		path = FPSTR(LoginUrl);
+		path = String(FPSTR(LoginUrl));
 	}
 
-	for (auto &&entry : staticFilesMap)
+	for (size_t i = 0; i < sizeof(staticFilesMap) / sizeof(staticFilesMap[0]); i++)
 	{
-		if (path.equalsIgnoreCase(FPSTR(entry.Path)))
+		const auto entryPath = FPSTR(pgm_read_ptr(&staticFilesMap[i].Path));
+		if (path.equalsIgnoreCase(entryPath))
 		{
-			auto response = request->beginResponse_P(200, FPSTR(entry.MediaType), entry.Data, entry.Size);
+			const auto mediaType = FPSTR(pgm_read_ptr(&staticFilesMap[i].MediaType));
+			const auto data = reinterpret_cast<const uint8_t *>(pgm_read_ptr(&staticFilesMap[i].Data));
+			const auto size = pgm_read_dword(&staticFilesMap[i].Size);
+			const auto zipped = pgm_read_byte(&staticFilesMap[i].Zipped);
+			auto response = request->beginResponse_P(200, String(mediaType), data, size);
 			if (worksWithoutAuth)
 			{
 				response->addHeader(FPSTR(CacheControlHeader), F("public, max-age=31536000"));
 			}
-			if (entry.Zipped)
+			if (zipped)
 			{
 				response->addHeader(F("Content-Encoding"), F("gzip"));
 			}
 			request->send(response);
-			LOG_DEBUG(F("Served path:") << path << F(" mimeType:") << entry.MediaType
-										<< F(" size:") << entry.Size);
+			LOG_DEBUG(F("Served path:") << path << F(" mimeType:") << mediaType
+										<< F(" size:") << size);
 			return;
 		}
 	}
@@ -644,6 +647,7 @@ void WebServer::firmwareUpdateUpload(AsyncWebServerRequest *request,
 
 		if (operations::instance.startUpdate(request->contentLength(), md5, error))
 		{
+			hardware::instance.showExternalMessages(F("Updating"), String());
 			// success, let's make sure we end the update if the client hangs up
 			request->onDisconnect(handleEarlyUpdateDisconnect);
 		}
@@ -688,12 +692,12 @@ void WebServer::restoreConfigurationUpload(AsyncWebServerRequest *request,
 	String error;
 	if (!index)
 	{
-		WebServer::instance.restoreConfigData.clear();
+		WebServer::instance.restoreConfigData = std::make_unique<std::vector<uint8_t>>();
 	}
 
 	for (size_t i = 0; i < len; i++)
 	{
-		WebServer::instance.restoreConfigData.push_back(data[i]);
+		WebServer::instance.restoreConfigData->push_back(data[i]);
 	}
 
 	if (final)
@@ -712,7 +716,7 @@ void WebServer::restoreConfigurationUpload(AsyncWebServerRequest *request,
 			return;
 		}
 
-		if (!config::instance.restoreAllConfigAsJson(WebServer::instance.restoreConfigData, md5))
+		if (!config::instance.restoreAllConfigAsJson(*WebServer::instance.restoreConfigData, md5))
 		{
 			handleError(request, F("Restore Failed"), 500);
 			return;
@@ -738,12 +742,22 @@ void WebServer::handleEarlyUpdateDisconnect()
 	operations::instance.abortUpdate();
 }
 
-void WebServer::notifyTemperatureChange()
-{
-	events.send(String(hardware::instance.getTemperatureC()).c_str(), "temperature", millis());
-}
-
 void WebServer::notifyHumidityChange()
 {
-	events.send(String(hardware::instance.getHumidity()).c_str(), "humidity", millis());
+	if (events.count())
+	{
+		events.send(String(hardware::instance.getHumidity()).c_str(), "humidity", millis());
+	}
+}
+
+bool WebServer::sendLogs(const String &data)
+{
+	// Serial.println(data);
+	if (logging.count() > 0)
+	{
+		logging.send(data.c_str(), "logs", millis());
+		return true;
+	}
+
+	return false;
 }

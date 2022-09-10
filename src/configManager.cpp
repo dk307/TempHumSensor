@@ -4,6 +4,7 @@
 #include <base64.h> // from esphap
 #include <MD5Builder.h>
 #include "logging.h"
+#include "esphap_base64.h"
 
 #include "configManager.h"
 
@@ -14,7 +15,6 @@ static const char WebUserNameId[] PROGMEM = "webusername";
 static const char WebPasswordId[] PROGMEM = "webpassword";
 static const char HomeKitPairDataId[] PROGMEM = "homekitpairdata";
 static const char SensorsRefreshIntervalId[] PROGMEM = "sensorsrefreshinterval";
-static const char ShowDisplayInFId[] PROGMEM = "showdisplayinf";
 
 config config::instance;
 
@@ -81,15 +81,14 @@ bool config::begin()
     data.webUserName = jsonDocument[FPSTR(WebUserNameId)].as<String>();
     data.webPassword = jsonDocument[FPSTR(WebPasswordId)].as<String>();
     data.sensorsRefreshInterval = jsonDocument[FPSTR(SensorsRefreshIntervalId)].as<uint64_t>();
-    data.showDisplayInF = jsonDocument[FPSTR(ShowDisplayInFId)].as<bool>();
 
     const auto encodedHomeKitData = jsonDocument[FPSTR(HomeKitPairDataId)].as<String>();
 
-    const auto size = base64_decoded_size(reinterpret_cast<const unsigned char *>(encodedHomeKitData.c_str()),
+    const auto size = esphap_base64_decoded_size(reinterpret_cast<const unsigned char *>(encodedHomeKitData.c_str()),
                                           encodedHomeKitData.length());
     data.homeKitPairData.resize(size);
 
-    base64_decode_(reinterpret_cast<const unsigned char *>(encodedHomeKitData.c_str()),
+    esphap_base64_decode(reinterpret_cast<const unsigned char *>(encodedHomeKitData.c_str()),
                    encodedHomeKitData.length(), data.homeKitPairData.data());
 
     data.homeKitPairData.shrink_to_fit();
@@ -117,11 +116,10 @@ void config::save()
 
     const auto requiredSize = base64_encoded_size(data.homeKitPairData.data(), data.homeKitPairData.size());
     const auto encodedData = std::make_unique<unsigned char[]>(requiredSize + 1);
-    base64_encode_(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
+    esphap_base64_encode(data.homeKitPairData.data(), data.homeKitPairData.size(), encodedData.get());
 
     jsonDocument[FPSTR(HomeKitPairDataId)] = encodedData.get();
     jsonDocument[FPSTR(SensorsRefreshIntervalId)] = data.sensorsRefreshInterval;
-    jsonDocument[FPSTR(ShowDisplayInFId)] = data.showDisplayInF;
 
     String json;
     serializeJson(jsonDocument, json);

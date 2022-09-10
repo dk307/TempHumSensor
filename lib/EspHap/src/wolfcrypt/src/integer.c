@@ -3424,7 +3424,7 @@ int s_mp_exptmod (mp_int * G, mp_int * X, mp_int * P, mp_int * Y, int redmode)
   } else {
     winsize = 8;
   }
-  INFO("Call s_mp_exptmod in integer.c, original winsize %d", winsize);
+  DEBUG("Call s_mp_exptmod in integer.c, original winsize %d", winsize);
 
 #ifdef MP_LOW_MEM
 //    if (winsize > 5) {
