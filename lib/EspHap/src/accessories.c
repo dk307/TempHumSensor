@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include <homekit/types.h>
+#include "types.h"
 
 bool homekit_value_equal(homekit_value_t *a, homekit_value_t *b) {
     if (a->is_null != b->is_null)
@@ -40,16 +40,8 @@ bool homekit_value_equal(homekit_value_t *a, homekit_value_t *b) {
             return (!ta && !tb);
         }
         case homekit_format_data:
-            if (!a->data_value && !b->data_value)
-                return true;
-
-            if (!a->data_value || !b->data_value)
-                return false;
-
-            if (a->data_size != b->data_size)
-                return false;
-
-            return !memcmp(a->data_value, b->data_value, a->data_size);
+            // TODO: implement comparison
+            return false;
     }
 
     return false;
@@ -97,15 +89,7 @@ void homekit_value_copy(homekit_value_t *dst, homekit_value_t *src) {
                 break;
             }
             case homekit_format_data:
-                if (src->is_static) {
-                    dst->data_value = src->data_value;
-                    dst->data_size = src->data_size;
-                    dst->is_static = true;
-                } else {
-                    dst->data_size = src->data_size;
-                    dst->data_value = malloc(src->data_size);
-                    memcpy(dst->data_value, src->data_value, src->data_size);
-                }
+                // TODO:
                 break;
             default:
                 // unknown format
@@ -133,8 +117,7 @@ void homekit_value_destruct(homekit_value_t *value) {
                     tlv_free(value->tlv_values);
                 break;
             case homekit_format_data:
-                if (!value->is_static && value->data_value)
-                    free(value->data_value);
+                // TODO:
                 break;
             default:
                 // unknown format
@@ -163,7 +146,30 @@ void *align_pointer(void *ptr) {
     }
     return (void*) p;
 }
-
+// to be checked
+homekit_characteristic_t* homekit_add_characteristic_to_service(homekit_service_t* service, homekit_characteristic_t* ch) {
+	if (service->characteristics) {
+		int i = 0;
+		size_t size = 0;
+		while (service->characteristics[i])
+			i++;
+		
+		size += sizeof(homekit_characteristic_t*) * (i + 2);
+		
+		homekit_characteristic_t** old = service->characteristics;
+		service->characteristics =calloc(1, size);
+		
+		int n = 0;
+		while (old[n]) {
+			service->characteristics[n] = old[n];
+			n++;
+		}
+		//free(old);
+		service->characteristics[i] = ch;
+		service->characteristics[i+1] = NULL;
+	}
+	return ch;
+}
 
 homekit_characteristic_t* homekit_characteristic_clone(homekit_characteristic_t* ch) {
     size_t type_len = strlen(ch->type) + 1;
@@ -295,7 +301,61 @@ homekit_characteristic_t* homekit_characteristic_clone(homekit_characteristic_t*
 
     return clone;
 }
+homekit_service_t* homekit_service_clone_preserve_characteristic(homekit_service_t* service) {
+	size_t type_len = strlen(service->type) + 1;
+	size_t size = align_size(sizeof(homekit_service_t) + type_len);
 
+	if (service->linked) {
+		int i = 0;
+		while (service->linked[i])
+			i++;
+
+		size += sizeof(homekit_service_t*) * (i + 1);
+	}
+	if (service->characteristics) {
+		int i = 0;
+		while (service->characteristics[i])
+			i++;
+
+		size += sizeof(homekit_characteristic_t*) * (i + 1);
+	}
+
+	uint8_t *p = calloc(1, size);
+	homekit_service_t *clone = (homekit_service_t*)p;
+	p += sizeof(homekit_service_t);
+	clone->accessory = service->accessory;
+	clone->id = service->id;
+	clone->type = strncpy((char*)p, service->type, type_len);
+	p[type_len - 1] = 0;
+	p += align_size(type_len);
+
+	clone->hidden = service->hidden;
+	clone->primary = service->primary;
+
+	if (service->linked) {
+		clone->linked = (homekit_service_t**)p;
+		int i = 0;
+		while (service->linked[i]) {
+			clone->linked[i] = service->linked[i];
+			i++;
+		}
+		clone->linked[i] = NULL;
+		p += (i + 1) * sizeof(homekit_service_t*);
+	}
+
+	if (service->characteristics) {
+		clone->characteristics = (homekit_characteristic_t**)p;
+		int i = 0;
+		while (service->characteristics[i]) {
+			clone->characteristics[i] = service->characteristics[i];
+			i++;
+		}
+		clone->characteristics[i] = NULL;
+		p += (i + 1) * sizeof(homekit_characteristic_t*);
+	}
+
+	return clone;
+}
 homekit_service_t* homekit_service_clone(homekit_service_t* service) {
     size_t type_len = strlen(service->type) + 1;
     size_t size = align_size(sizeof(homekit_service_t) + type_len);
@@ -352,6 +412,18 @@ homekit_service_t* homekit_service_clone(homekit_service_t* service) {
     return clone;
 }
 
+void homekit_accessory_free(homekit_accessory_t* ac,bool freeservices) {
+	
+	if (freeservices && ac->services) {
+		for (int i = 0; ac->services[i]; i++) {
+			free(ac->services[i]);
+			ac->services[i] = 0;
+
+		}
+	}
+	free(ac);
+}
+
 homekit_accessory_t* homekit_accessory_clone(homekit_accessory_t* ac) {
     size_t size = sizeof(homekit_accessory_t);
     if (ac->services) {
@@ -394,20 +466,21 @@ void homekit_characteristic_ex_old_setter(homekit_characteristic_t *ch, homekit_
     ch->setter(value);
 }
 
+
 void homekit_accessories_init(homekit_accessory_t **accessories) {
-    //设置aid 和 iid (自增1)
-	uint32_t aid = 1;
+    int aid = 1;
     for (homekit_accessory_t **accessory_it = accessories; *accessory_it; accessory_it++) {
-    	homekit_accessory_t *accessory = *accessory_it;
+        homekit_accessory_t *accessory = *accessory_it;
         if (accessory->id) {
             if (accessory->id >= aid)
                 aid = accessory->id+1;
         } else {
             accessory->id = aid++;
         }
-        uint32_t iid = 1;
+
+        int iid = 1;
         for (homekit_service_t **service_it = accessory->services; *service_it; service_it++) {
-        	homekit_service_t *service = *service_it;
+            homekit_service_t *service = *service_it;
             service->accessory = accessory;
             if (service->id) {
                 if (service->id >= iid)
@@ -415,8 +488,9 @@ void homekit_accessories_init(homekit_accessory_t **accessories) {
             } else {
                 service->id = iid++;
             }
+
             for (homekit_characteristic_t **ch_it = service->characteristics; *ch_it; ch_it++) {
-            	homekit_characteristic_t *ch = *ch_it;
+                homekit_characteristic_t *ch = *ch_it;
                 ch->service = service;
                 if (ch->id) {
                     if (ch->id >= iid)
@@ -439,7 +513,7 @@ void homekit_accessories_init(homekit_accessory_t **accessories) {
     }
 }
 
-homekit_accessory_t *homekit_accessory_by_id(homekit_accessory_t **accessories, uint32_t aid) {
+homekit_accessory_t *homekit_accessory_by_id(homekit_accessory_t **accessories, int aid) {
     for (homekit_accessory_t **accessory_it = accessories; *accessory_it; accessory_it++) {
         homekit_accessory_t *accessory = *accessory_it;
 
@@ -472,7 +546,7 @@ homekit_characteristic_t *homekit_service_characteristic_by_type(homekit_service
     return NULL;
 }
 
-homekit_characteristic_t *homekit_characteristic_by_aid_and_iid(homekit_accessory_t **accessories, uint32_t aid, uint32_t iid) {
+homekit_characteristic_t *homekit_characteristic_by_aid_and_iid(homekit_accessory_t **accessories, int aid, int iid) {
     for (homekit_accessory_t **accessory_it = accessories; *accessory_it; accessory_it++) {
         homekit_accessory_t *accessory = *accessory_it;
 
@@ -495,7 +569,7 @@ homekit_characteristic_t *homekit_characteristic_by_aid_and_iid(homekit_accessor
 }
 
 
-homekit_characteristic_t *homekit_characteristic_find_by_type(homekit_accessory_t **accessories, uint32_t aid, const char *type) {
+homekit_characteristic_t *homekit_characteristic_find_by_type(homekit_accessory_t **accessories, int aid, const char *type) {
     for (homekit_accessory_t **accessory_it = accessories; *accessory_it; accessory_it++) {
         homekit_accessory_t *accessory = *accessory_it;
 

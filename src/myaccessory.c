@@ -1,5 +1,5 @@
-#include <homekit/homekit.h>
-#include <homekit/characteristics.h>
+#include <homekit.h>
+#include <characteristics.h>
 
 #define HOMEKIT_CUSTOM_UUID(value) (value "-03e9-4157-b099-54f4a4944163")
 
@@ -34,7 +34,7 @@
 #define HOMEKIT_DECLARE_CHARACTERISTIC_CUSTOM_SENSOR_REFRESH_INTERVAL(_value, ...)                                  \
     .type = HOMEKIT_CHARACTERISTIC_CUSTOM_SENSOR_REFRESH_INTERVAL,                                                  \
     .description = "Sensor Refresh Interval",                                                                       \
-    .format = homekit_format_uint64,                                                                                \
+    .format = homekit_format_uint16,                                                                                \
     .unit = homekit_unit_seconds,                                                                                   \
     .permissions = homekit_permissions_paired_read | homekit_permissions_paired_write | homekit_permissions_notify, \
     .min_value = (float[]){0},                                                                                      \
@@ -53,7 +53,7 @@ homekit_accessory_t *accessories[] = {
         HOMEKIT_SERVICE(ACCESSORY_INFORMATION, .id=1, .characteristics=(homekit_characteristic_t*[]) {
             HOMEKIT_CHARACTERISTIC(NAME, "Humidity Sensor", .id=100),
             HOMEKIT_CHARACTERISTIC(MODEL, "Humidity Sensor", .id=101),
-            HOMEKIT_CHARACTERISTIC(SERIAL_NUMBER, NULL, .id=102),
+            HOMEKIT_CHARACTERISTIC(SERIAL_NUMBER, "", .id=102),
             HOMEKIT_CHARACTERISTIC(FIRMWARE_REVISION, XSTRINFGY(VERSION), .id=103),
             NULL
         }),

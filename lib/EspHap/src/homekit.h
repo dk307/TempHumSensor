@@ -1,11 +1,9 @@
 #ifndef __HOMEKIT_H__
 #define __HOMEKIT_H__
 
-#include <homekit/types.h>
+#include "port_x.h"
+#include "types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef void *homekit_client_id_t;
 
@@ -29,13 +27,7 @@ typedef struct {
 
     homekit_accessory_category_t category;
 
-    // Used for Bonjour
-	// Current configuration number. Required.
-	// Must update when an accessory, service, or characteristic is added or removed on the accessory server.
-	// Accessories must increment the config number after a firmware update.
-	// This must have a range of 1-65535 and wrap to 1 when it overflows.
-	// This value must persist across reboots, power cycles, etc.
-    uint16_t config_number;
+    int config_number;
 
     // Password in format "111-23-456".
     // If password is not specified, a random password
@@ -56,10 +48,11 @@ typedef struct {
     void (*on_event)(homekit_event_t event);
 } homekit_server_config_t;
 
+#ifndef ARDUINO8266_SERVER_CPP
 // Get pairing URI
 int homekit_get_setup_uri(const homekit_server_config_t *config,
                           char *buffer, size_t buffer_size);
-
+#endif
 // Initialize HomeKit accessory server
 void homekit_server_init(homekit_server_config_t *config);
 
@@ -74,9 +67,5 @@ homekit_client_id_t homekit_get_client_id();
 
 bool homekit_client_is_admin();
 int  homekit_client_send(unsigned char *data, size_t size);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // __HOMEKIT_H__

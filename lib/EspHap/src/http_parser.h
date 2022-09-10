@@ -18,11 +18,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-
-// Removed http_errno_name, http_errno_description to save ram
-// (constant strings are loaded in ram on ESP8266)
-// Wang Bin 2020-03-07
-
 #ifndef http_parser_h
 #define http_parser_h
 #ifdef __cplusplus
@@ -210,11 +205,7 @@ enum http_status
 
 enum http_method
   {
-// For compat with ESP8266WebServer
-//(HTTP_POST / HTTP_GET is defined in ESP8266WebServer
-//#define XX(num, name, string) HTTP_##name = num,
-	//replace "HTTP_*" to "HTTP_PARSER_METHOD_*"
-#define XX(num, name, string) HTTP_PARSER_METHOD_##name = num,
+#define XX(num, name, string) HTTP_##name = num,
   HTTP_METHOD_MAP(XX)
 #undef XX
   };
@@ -416,10 +407,10 @@ int http_should_keep_alive(const http_parser *parser);
 const char *http_method_str(enum http_method m);
 
 /* Return a string name of the given error */
-//const char *http_errno_name(enum http_errno err);
+const char *http_errno_name(enum http_errno err);
 
 /* Return a string description of the given error */
-//const char *http_errno_description(enum http_errno err);
+const char *http_errno_description(enum http_errno err);
 
 /* Initialize all http_parser_url members to 0 */
 void http_parser_url_init(struct http_parser_url *u);

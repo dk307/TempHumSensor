@@ -5,6 +5,8 @@
 ** \details Queue handling library (designed in c on STM32)
 **/
 /****************************************************************/
+#include "port_x.h"
+#ifdef ARDUINO8266_SERVER_CPP
 #include <string.h>
 #include <stdlib.h>
 
@@ -172,3 +174,4 @@ bool __attribute__((nonnull)) q_peekIdx(const Queue_t * const q, void * const re
 	return true;
 }
 
+#endif

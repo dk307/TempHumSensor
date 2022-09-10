@@ -7,8 +7,8 @@
 #include "logging.h"
 
 #include <math.h>
-#include <homekit/homekit.h>
-#include <homekit/characteristics.h>
+#include <homekit.h>
+#include <characteristics.h>
 #include <arduino_homekit_server.h>
 
 homeKit2 homeKit2::instance;
@@ -87,7 +87,7 @@ void homeKit2::notifyHumidityChange()
 void homeKit2::notifySensorRefreshIntervalChange()
 {
     sensorRefreshInterval = config::instance.data.sensorsRefreshInterval / 1000;
-    updateChaValue(chaSensorRefershInterval, sensorRefreshInterval);
+    updateChaValue(chaSensorRefershInterval, static_cast<int>(sensorRefreshInterval));
     homekit_characteristic_notify(&chaSensorRefershInterval, chaSensorRefershInterval.value);
 }
 
@@ -127,12 +127,7 @@ void homeKit2::loop()
 
 bool homeKit2::isPaired()
 {
-    auto server = arduino_homekit_get_running_server();
-    if (server)
-    {
-        return server->paired;
-    }
-    return false;
+    return arduino_homekit_connected_clients_count() > 0;
 }
 
 void homeKit2::updatePassword(const char *password)
@@ -166,11 +161,6 @@ void homeKit2::updateChaValue(homekit_characteristic_t &cha, const char *value)
     }
 }
 
-void homeKit2::updateChaValue(homekit_characteristic_t &cha, uint64_t value)
-{
-    cha.value.uint64_value = value;
-}
-
 void homeKit2::updateChaValue(homekit_characteristic_t &cha, int value)
 {
     cha.value.int_value = value;
@@ -178,10 +168,10 @@ void homeKit2::updateChaValue(homekit_characteristic_t &cha, int value)
 
 void homeKit2::onSensorRefreshIntervalChange(const homekit_value_t value)
 {
-    if (value.format == homekit_format_uint64)
+    if ((value.format == homekit_format_uint16) || (value.format == homekit_format_int))
     {
-        homeKit2::instance.instance.sensorRefreshInterval = value.uint64_value;
-        updateChaValue(chaSensorRefershInterval, value.uint64_value);
+        homeKit2::instance.instance.sensorRefreshInterval = value.int_value;
+        updateChaValue(chaSensorRefershInterval, value.int_value);
         config::instance.data.sensorsRefreshInterval = homeKit2::instance.instance.sensorRefreshInterval * 1000;
         config::instance.save();
     }

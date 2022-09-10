@@ -1,18 +1,24 @@
 #ifndef ARDUINO_HOMEKIT_SERVER_H_
 #define ARDUINO_HOMEKIT_SERVER_H_
 
-
+#include "port_x.h"
+#ifdef ARDUINO8266_SERVER_CPP
 #include <WiFiServer.h>
 #include <WiFiClient.h>
 #include <string.h> //size_t
+
+#if TCP_MSS <1460
+#warning "You have selected lower memory for lwIP Variant, this can cause a problem, Please seelct v2 Higher Bandwidth with TCP_MSS =1460 "
+#endif 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "constants.h"
-#include "base64.h"
+//#include "constants.h"
+#include "esphap_base64.h"
 #include "crypto.h"
+
 #include "pairing.h"
 #include "storage.h"
 #include "query_params.h"
@@ -20,7 +26,7 @@ extern "C" {
 #include "homekit_debug.h"
 #include "port.h"
 #include "cQueue.h"
-#include "homekit/homekit.h"
+#include "homekit.h"
 #include "http_parser.h"
 
 typedef enum {
@@ -69,69 +75,13 @@ typedef struct {
 	size_t accessory_public_key_size;
 } pair_verify_context_t;
 
-typedef struct {
-	WiFiServer *wifi_server;
-	char accessory_id[ACCESSORY_ID_SIZE + 1];
-	ed25519_key accessory_key;
-
-	homekit_server_config_t *config;
-
-	bool paired;
-	pairing_context_t *pairing_context;
-
-	//int listen_fd;
-	//fd_set fds;
-	//int max_fd;
-	int nfds;// arduino homekit uses this to record client count
-
-	client_context_t *clients;
-} homekit_server_t;
-
+/*
 typedef struct {
 	homekit_characteristic_t *characteristic;
 	homekit_value_t value;
 } characteristic_event_t;
 
-struct _client_context_t {
-	homekit_server_t *server;
-	//int socket;
-	WiFiClient *socket; //new and delete
-
-	homekit_endpoint_t endpoint;
-	query_param_t *endpoint_params;
-
-	byte data[1024 + 18];
-	size_t data_size;
-	size_t data_available;
-
-	char *body;
-	size_t body_length;
-	http_parser parser;
-
-	int pairing_id;
-	byte permissions;
-
-	bool disconnect;
-
-	homekit_characteristic_t *current_characteristic;
-	homekit_value_t *current_value;
-
-	bool encrypted;
-	byte read_key[32];
-	byte write_key[32];
-	int count_reads;
-	int count_writes;
-
-	//QueueHandle_t event_queue;
-	Queue_t *event_queue;
-	pair_verify_context_t *verify_context;
-
-	homekit_client_step_t step; // WangBin added
-	bool error_write; // WangBin added
-
-	struct _client_context_t *next;
-};
-
+*/
 
 
 typedef enum {
@@ -221,6 +171,7 @@ typedef struct _client_event {
 	struct _client_event *next;
 } client_event_t;
 
+//struct homekit_server_t;
 #define ISDIGIT(x) isdigit((unsigned char)(x))
 #define ISBASE36(x) (isdigit((unsigned char)(x)) || (x >= 'A' && x <= 'Z'))
 
@@ -228,11 +179,14 @@ typedef struct _client_event {
 void arduino_homekit_setup(homekit_server_config_t *config);
 void arduino_homekit_loop();
 
-homekit_server_t * arduino_homekit_get_running_server();
+//homekit_server_t * arduino_homekit_get_running_server();
 int arduino_homekit_connected_clients_count();
-void homekit_update_config_number();
-
+bool arduino_homekit_is_paired();
+void homekit_server_restart();
+int homekit_get_setup_uri(const homekit_server_config_t *config, char *buffer, size_t buffer_size);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /*ARDUINO8266_SERVER_CPP*/
 #endif /* ARDUINO_HOMEKIT_SERVER_H_ */

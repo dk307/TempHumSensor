@@ -5,12 +5,17 @@
 ** \details Queue handling library (designed in c on STM32)
 **/
 /****************************************************************/
+
 #ifndef __CQUEUE_H
 	#define __CQUEUE_H
 
+#include "port_x.h"
+#ifdef ARDUINO8266_SERVER_CPP
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
 
 #include <inttypes.h>
 #include <stdbool.h>
@@ -198,6 +203,8 @@ inline bool __attribute__((nonnull, always_inline)) q_peekPrevious(const Queue_t
 /****************************************************************/
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif /* __CQUEUE_H */
